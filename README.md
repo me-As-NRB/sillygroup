@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/me-As-NRB/sillygroup/actions/workflows/ci.yml/badge.svg)](https://github.com/me-As-NRB/sillygroup/actions/workflows/ci.yml)
 
-A real-time multiplayer party game for 3–20 friends. Each question is about the group
+A real-time multiplayer game for 2–20 people. Each question is about the group
 ("Who's most likely to forget their bag on a trek?"). Everyone votes for a player, and the
 name with the most votes is the right answer. Players who picked it score by speed: the
 fastest gets 1000, then 850, 700, 550, 400, 250, and everyone after that gets 100. A round

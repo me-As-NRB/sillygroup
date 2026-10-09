@@ -11,7 +11,7 @@ export const escapeHtml = (s: unknown): string =>
 export function renderIndex(template: string, opts: { origin: string; roomCode?: string; goatcounterCode?: string }): string {
   const { origin, goatcounterCode } = opts;
   const code = (opts.roomCode ?? "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4);
-  const title = code ? `Join my game! Room ${code} · Who In The Room` : "Who In The Room — the party game about your group";
+  const title = code ? `Join my game! Room ${code} · Who In The Room` : "Who In The Room — how well do you know your group?";
   const desc = code
     ? "Tap to join with just your name. Cheeky questions about the group: vote who fits, fastest right guess wins!"
     : "Cheeky AI questions about your group. Vote who fits, guess the majority, fastest right answer wins. Free, no app needed.";

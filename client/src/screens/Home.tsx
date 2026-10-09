@@ -84,7 +84,6 @@ export function Home() {
   return (
     <main className="app home">
       <section className="hero-copy">
-        <p className="eyebrow">Party game · 2–20 players · no app needed</p>
         <h1>
           Who In The <span className="grad-text">Room</span>
         </h1>
@@ -92,14 +91,7 @@ export function Home() {
           AI writes cheeky questions about <em>your</em> group. Everyone secretly votes for who fits best. Match the
           majority, fastest, to win.
         </p>
-        <ul className="perks">
-          <li>Questions in Hinglish or English, from friendly to savage</li>
-          <li>Pick a theme: trips, office, college, weddings and 45 more</li>
-          <li>Couple mode for two: how well do you know each other?</li>
-        </ul>
       </section>
-
-      <HeroPreview />
 
       <form className="card stack join-card" onSubmit={onSubmit}>
         <label htmlFor="name">Your name</label>
@@ -152,41 +144,5 @@ export function Home() {
       </ol>
       <About />
     </main>
-  );
-}
-
-const PREVIEW_VOTES = [
-  { name: "Rohan", votes: 3, color: "#6d4aff" },
-  { name: "Sneha", votes: 1, color: "#0b7a50" },
-  { name: "Aman", votes: 0, color: "#b45309" }
-];
-
-/** A static mock of a results card, so first-time visitors see what the game looks like. */
-function HeroPreview() {
-  return (
-    <div className="hero-preview" aria-hidden="true">
-      <div className="preview-card">
-        <div className="preview-top">
-          <span>Question 3/12</span>
-          <span>Trek & Hiking</span>
-        </div>
-        <p className="preview-q">Who's most likely to forget their bag halfway up a trek?</p>
-        <ul>
-          {PREVIEW_VOTES.map((p) => (
-            <li key={p.name} className={p.votes === 3 ? "top" : ""}>
-              <span className="avatar sm" style={{ background: p.color }}>
-                {p.name[0]}
-              </span>
-              <span className="pname">{p.name}</span>
-              <span className="pbar">
-                <i style={{ width: `${(p.votes / 4) * 100}%`, background: p.color }} />
-              </span>
-              <span className="pcount">{p.votes}</span>
-            </li>
-          ))}
-        </ul>
-        <p className="preview-foot">The group says Rohan · Priya +1000</p>
-      </div>
-    </div>
   );
 }

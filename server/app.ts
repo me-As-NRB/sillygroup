@@ -42,6 +42,12 @@ export function rateLimiter(limit: number, windowMs: number, now: () => number =
   };
 }
 
+/** The visitor's IP: behind Render's proxy it's the first X-Forwarded-For entry. */
+export function clientIp(forwardedFor: string | string[] | undefined, fallback: string): string {
+  const header = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor;
+  return header?.split(",")[0]?.trim() || fallback;
+}
+
 export function createGameServer(opts: AppOptions): GameServer {
   const { deps, stats, statsKey = "", goatcounterCode } = opts;
   const clientDir = resolve(opts.clientDir ?? "dist/client");
@@ -107,10 +113,12 @@ export function createGameServer(opts: AppOptions): GameServer {
 
       let target: Room | undefined;
       if (req?.create) {
-        if (!canCreateRoom(socket.handshake.address)) {
+        const ip = clientIp(socket.handshake.headers["x-forwarded-for"], socket.handshake.address);
+        if (!canCreateRoom(ip)) {
           return reply({ ok: false, error: "Too many rooms created. Try again in a minute." });
         }
-        target = manager.create();
+        // The host's IP is only turned into a salted hash for the question history; never stored or sent.
+        target = manager.create(deps.questionHistory.keyFor(ip));
         if (req.joinedBefore === true) deps.tracker.track("creators_who_joined_before");
       } else {
         target = manager.get(req?.code);

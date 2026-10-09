@@ -15,7 +15,6 @@ export function TopBar({ code }: { code: string }) {
   return (
     <header className="topbar">
       <span className="pill code" title="Room code">
-        <span aria-hidden="true">👀 </span>
         <span className="sr-only">Room code </span>
         {code}
       </span>

@@ -1,6 +1,6 @@
 import { aiEnabled, aiProvider, generateQuestions } from "./ai";
 import { createGameServer } from "./app";
-import { DEFAULT_TIMINGS } from "./game";
+import { DEFAULT_TIMINGS, HostHistory } from "./game";
 import { createStats } from "./stats";
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -18,7 +18,8 @@ const server = createGameServer({
     timings: { ...DEFAULT_TIMINGS, revealMs: Number(process.env.REVEAL_MS) || DEFAULT_TIMINGS.revealMs },
     now: Date.now,
     // One line per game event; read them in Render → your service → Logs.
-    log: (line) => console.log(line)
+    log: (line) => console.log(line),
+    questionHistory: new HostHistory()
   },
   stats,
   clientDir: process.env.CLIENT_DIR,

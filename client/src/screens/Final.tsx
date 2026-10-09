@@ -17,16 +17,13 @@ export function Final({ state, final }: { state: GameState; final: FinalView }) 
 
   useEffect(() => {
     play("final");
-    confetti(220);
+    confetti(90);
   }, []);
 
   return (
     <main className="app">
       <TopBar code={state.code} />
       <section className="card stack center" aria-labelledby="winner-heading">
-        <div style={{ fontSize: 52 }} aria-hidden="true">
-          🏆
-        </div>
         <div className="muted" style={{ fontWeight: 600 }}>
           {tied.length > 1 ? "Joint winners" : "Winner of the round"}
         </div>
@@ -54,10 +51,10 @@ export function Final({ state, final }: { state: GameState; final: FinalView }) 
       {isHost ? (
         <div className="stack">
           <button className="btn primary block" onClick={start}>
-            🔁 Play another round (new questions)
+            Play another round
           </button>
           <button className="btn block" onClick={toLobby}>
-            🎛️ Change themes in the lobby
+            Change theme in the lobby
           </button>
         </div>
       ) : (
@@ -130,7 +127,7 @@ function ShareCard({ final, youId }: { final: FinalView; youId: string }) {
   return (
     <section className="card stack center" aria-labelledby="share-heading">
       <h2 id="share-heading" className="h3">
-        📸 Show off the results
+        Share the results
       </h2>
       {url ? (
         <img className="share-preview" src={url} alt="Result card with the winner, top three and the group's favourite verdicts" />
@@ -139,10 +136,10 @@ function ShareCard({ final, youId }: { final: FinalView; youId: string }) {
       )}
       <div className="share-actions">
         <button className="btn primary" onClick={share}>
-          📸 Share result card
+          Share result card
         </button>
         <button className="btn" onClick={save}>
-          ⬇️ Save image
+          Save image
         </button>
       </div>
     </section>

@@ -4,7 +4,7 @@ import { io as connect, type Socket } from "socket.io-client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { ClientToServerEvents, GameState, JoinRequest, JoinResponse, ServerToClientEvents } from "../shared/types";
 import { createGameServer, rateLimiter, type GameServer } from "../server/app";
-import { DEFAULT_TIMINGS } from "../server/game";
+import { DEFAULT_TIMINGS, HostHistory } from "../server/game";
 import { createStats } from "../server/stats";
 
 type ClientSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -22,7 +22,8 @@ beforeAll(async () => {
       tracker: stats,
       timings: { ...DEFAULT_TIMINGS, revealMs: 50 },
       now: Date.now,
-      log: () => {}
+      log: () => {},
+      questionHistory: new HostHistory()
     },
     stats,
     clientDir: "does-not-exist",

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QUESTIONS_PER_ROUND } from "../shared/rules";
-import { DEFAULT_TIMINGS, Room, RoomManager, type GameDeps } from "../server/game";
+import { DEFAULT_TIMINGS, HostHistory, Room, RoomManager, type GameDeps } from "../server/game";
+import type { GenerateOptions } from "../server/ai";
 import type { Tracker } from "../server/stats";
 
 function makeDeps(overrides: Partial<GameDeps> = {}): GameDeps & { tracker: Tracker & { calls: string[] } } {
@@ -17,6 +18,7 @@ function makeDeps(overrides: Partial<GameDeps> = {}): GameDeps & { tracker: Trac
     timings: DEFAULT_TIMINGS,
     now: () => Date.now(),
     log: () => {},
+    questionHistory: new HostHistory(),
     ...overrides,
     tracker
   };
@@ -183,7 +185,7 @@ describe("a full round", () => {
 
     expect(generateQuestions).toHaveBeenCalledWith(
       expect.objectContaining({
-        count: 10,
+        count: 14, // a few extra, so the most varied ten can be kept
         genres: ["Trek & Hiking"],
         tone: "friendly",
         language: "hinglish",
@@ -193,6 +195,71 @@ describe("a full round", () => {
     );
     expect(room.stateFor(ids[0]).question!.text).toBe("Who would win a staring contest?");
     expect(room.stateFor(ids[0]).question!.total).toBe(10);
+  });
+});
+
+describe("question variety", () => {
+  async function playRound(room: Room, ids: string[]): Promise<string[]> {
+    await startAndWait(room, ids[0]);
+    const texts: string[] = [];
+    for (let i = 0; i < QUESTIONS_PER_ROUND; i++) {
+      texts.push(room.stateFor(ids[0]).question!.text);
+      for (const id of ids) room.vote(id, ids[0]);
+      vi.advanceTimersByTime(DEFAULT_TIMINGS.revealMs);
+    }
+    return texts;
+  }
+
+  it("asks the AI for 14 questions on 14 different life areas, avoiding everything played", async () => {
+    const generateQuestions = vi.fn<(opts: GenerateOptions) => Promise<string[]>>(async () => []);
+    const { room, ids } = setup(3, makeDeps({ generateQuestions }));
+    const round1 = await playRound(room, ids);
+
+    room.toLobby(ids[0]);
+    room.updateSettings(ids[0], { genres: ["party"] }); // change theme between rounds
+    await startAndWait(room, ids[0]);
+
+    const second = generateQuestions.mock.calls[1][0];
+    expect(second.count).toBe(14);
+    expect(new Set(second.angles).size).toBe(14);
+    expect(second.genres).toEqual(["House Party"]);
+    expect(second.avoid).toEqual(expect.arrayContaining(round1));
+  });
+
+  it("drops AI questions that repeat an idea already played, even reworded", async () => {
+    const repeat = "Who would forget their bag halfway up a trek?";
+    const generateQuestions = vi.fn(async () => [repeat, "Who would start a dance-off on the summit?"]);
+    const deps = makeDeps({ generateQuestions });
+    deps.questionHistory.add("host-1", ["Who is most likely to forget their bag on a trek?"]);
+    const room = new Room("VARY", deps, () => {}, () => {}, "host-1");
+    const ids = ["A", "B", "C"].map((n) => {
+      const r = room.addPlayer(n);
+      if (!r.ok) throw new Error(r.error);
+      room.connect(r.player.id);
+      return r.player.id;
+    });
+
+    await startAndWait(room, ids[0]);
+    expect(room.stateFor(ids[0]).question!.text).toBe("Who would start a dance-off on the summit?");
+  });
+
+  it("never shows the same host a question again in a new room", async () => {
+    const deps = makeDeps();
+    const makeRoom = (code: string) => {
+      const room = new Room(code, deps, () => {}, () => {}, "same-host");
+      const ids = ["A", "B"].map((n) => {
+        const r = room.addPlayer(n);
+        if (!r.ok) throw new Error(r.error);
+        room.connect(r.player.id);
+        return r.player.id;
+      });
+      return { room, ids };
+    };
+    const first = makeRoom("ONE");
+    const seenFirst = await playRound(first.room, first.ids);
+    const second = makeRoom("TWO");
+    const seenSecond = await playRound(second.room, second.ids);
+    expect(seenSecond.filter((q) => seenFirst.includes(q))).toEqual([]);
   });
 });
 

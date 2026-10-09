@@ -23,6 +23,9 @@ import type {
 } from "../shared/types";
 import type { GenerateOptions } from "./ai";
 import { pickFromBank } from "./questions";
+import { pickDiverse, sampleAngles, type HostHistory } from "./variety";
+
+export { HostHistory } from "./variety";
 import type { Tracker } from "./stats";
 
 export interface Timings {
@@ -54,6 +57,8 @@ export interface GameDeps {
   now: () => number;
   /** Receives one human-readable line per game event (joins, votes, results). */
   log: (line: string) => void;
+  /** Questions each host has already seen, so new games avoid them. */
+  questionHistory: HostHistory;
 }
 
 interface Player {
@@ -104,7 +109,9 @@ export class Room {
     readonly code: string,
     private readonly deps: GameDeps,
     private readonly onChange: (room: Room) => void,
-    private readonly onEmpty: (room: Room) => void
+    private readonly onEmpty: (room: Room) => void,
+    /** Hashed fingerprint of the host's IP, for the per-host question history. */
+    private readonly hostKey: string | null = null
   ) {}
 
   private log(message: string): void {
@@ -269,20 +276,26 @@ export class Room {
 
     const seq = ++this.roundSeq;
     const { genres, context, tone, language } = this.settings;
-    let questions = await this.deps.generateQuestions({
-      count: QUESTIONS_PER_ROUND,
+    // Everything this host has seen in any room, plus this room's rounds (most recent last).
+    const seen = [...new Set([...this.deps.questionHistory.get(this.hostKey), ...this.used])];
+    // Ask for a few extra, each about a different life area, then keep the most varied ten.
+    const angles = sampleAngles(QUESTIONS_PER_ROUND + 4);
+    const aiQuestions = await this.deps.generateQuestions({
+      count: angles.length,
       genres: genres.map((id) => genreById.get(id)?.label ?? id),
       context,
       tone,
       language,
       playerCount: this.players.size,
-      avoid: this.used
+      avoid: seen,
+      angles
     });
     // The room may have restarted or emptied while we waited on the AI.
     if (seq !== this.roundSeq || this.players.size === 0) return;
 
-    tracker.track(questions.length >= QUESTIONS_PER_ROUND / 2 ? "rounds_ai" : "rounds_backup");
+    let questions = pickDiverse(aiQuestions, seen, QUESTIONS_PER_ROUND);
     const fromAi = questions.length;
+    tracker.track(fromAi >= QUESTIONS_PER_ROUND / 2 ? "rounds_ai" : "rounds_backup");
     this.log(
       [
         `▶️ Round ${this.rounds} started`,
@@ -297,11 +310,17 @@ export class Room {
         .join(" · ")
     );
     if (questions.length < QUESTIONS_PER_ROUND) {
-      const topUp = pickFromBank(QUESTIONS_PER_ROUND - questions.length, [...this.used, ...questions], { genres, tone, language });
-      questions = [...questions, ...topUp];
+      const avoid = [...seen, ...questions];
+      const candidates = pickFromBank(40, avoid, { genres, tone, language });
+      questions = [...questions, ...pickDiverse(candidates, avoid, QUESTIONS_PER_ROUND - questions.length)];
+    }
+    if (questions.length < QUESTIONS_PER_ROUND) {
+      // Nearly everything has been played already: allow similar ones rather than a short round.
+      questions = [...questions, ...pickFromBank(QUESTIONS_PER_ROUND - questions.length, [...this.used, ...questions], { genres, tone, language })];
     }
     this.questions = questions;
     this.used.push(...questions);
+    this.deps.questionHistory.add(this.hostKey, questions);
     this.qIndex = -1;
     this.nextQuestion();
   }
@@ -462,12 +481,13 @@ export class RoomManager {
     return this.rooms.get(String(code ?? "").toUpperCase().replace(/[^A-Z]/g, ""));
   }
 
-  create(): Room {
+  /** @param hostKey hashed fingerprint of the creator's IP (see HostHistory). */
+  create(hostKey: string | null = null): Room {
     let code: string;
     do {
       code = Array.from(randomBytes(4), (b) => CODE_LETTERS[b % CODE_LETTERS.length]).join("");
     } while (this.rooms.has(code));
-    const room = new Room(code, this.deps, this.onChange, (r) => this.rooms.delete(r.code));
+    const room = new Room(code, this.deps, this.onChange, (r) => this.rooms.delete(r.code), hostKey);
     this.rooms.set(code, room);
     this.deps.tracker.track("rooms_created");
     return room;

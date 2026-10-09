@@ -68,7 +68,7 @@ test("three players play a full round", async ({ browser, page: host, contextOpt
       // The last vote ends the question at once, so only earlier voters see the locked-in state.
       if (n < players.length - 1) await expect(pick).toHaveAttribute("aria-pressed", "true");
     }
-    await expect(host.getByRole("heading", { name: "🗳️ Who voted for whom" })).toBeVisible();
+    await expect(host.getByRole("heading", { name: "Who voted for whom" })).toBeVisible();
     await expect(host.getByRole("heading", { level: 1, name: "Gita Guest" })).toBeVisible();
     await expect(host.locator(".vote-row.win .voter")).toHaveCount(3);
   }

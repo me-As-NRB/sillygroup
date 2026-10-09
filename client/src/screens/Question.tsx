@@ -80,7 +80,7 @@ export function Question({ state, question }: { state: GameState; question: Ques
 
       <p className="muted center" style={{ margin: 0 }} aria-live="polite">
         {myVote
-          ? `🔒 Locked in! Waiting for others… (${done}/${online.length})`
+          ? `Locked in. Waiting for others… (${done}/${online.length})`
           : "Who will the group pick? Faster right answers score more!"}
       </p>
       <ul className="voted-strip" aria-label="Who has voted">

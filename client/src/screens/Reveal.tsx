@@ -3,10 +3,8 @@ import type { GameState, QuestionView, RevealView, TallyEntry } from "../../../s
 import { Avatar, usePlayerTint } from "../components/Avatar";
 import { Scoreboard } from "../components/Players";
 import { TopBar } from "../components/TopBar";
-import { confetti } from "../lib/confetti";
 import { play } from "../lib/sound";
 
-const MEDALS = ["🥇", "🥈", "🥉"];
 
 export function Reveal({ state, question, reveal }: { state: GameState; question: QuestionView; reveal: RevealView }) {
   const myVote = question.myVote;
@@ -18,10 +16,8 @@ export function Reveal({ state, question, reveal }: { state: GameState; question
   useEffect(() => {
     play("reveal");
     const t = setTimeout(() => {
-      if (myAward) {
-        play("correct");
-        confetti(90);
-      } else if (myVote) play("wrong");
+      if (myAward) play("correct");
+      else if (myVote) play("wrong");
     }, 650);
     return () => clearTimeout(t);
     // Sounds play once when the reveal appears.
@@ -38,7 +34,7 @@ export function Reveal({ state, question, reveal }: { state: GameState; question
         <b>
           Question {question.index + 1} of {question.total}
         </b>
-        <span className="muted small">{last ? "🏁 Final results next" : "Next question soon…"}</span>
+        <span className="muted small">{last ? "Final results next" : "Next question soon…"}</span>
       </div>
 
       <section className="card stack" aria-live="polite">
@@ -55,17 +51,17 @@ export function Reveal({ state, question, reveal }: { state: GameState; question
           <h1 className="who display grad-text">{verdict}</h1>
         </div>
         {myAward ? (
-          <div className="result-banner good">🎯 You nailed it! +{myAward.points} points</div>
+          <div className="result-banner good">You got it! +{myAward.points} points</div>
         ) : myVote ? (
-          <div className="result-banner bad">😬 Not this time — the group thought differently.</div>
+          <div className="result-banner bad">Not this time. The group thought differently.</div>
         ) : (
-          <div className="result-banner none">⌛ You didn't vote on this one.</div>
+          <div className="result-banner none">You didn't vote on this one.</div>
         )}
       </section>
 
       <section className="card stack" aria-labelledby="votes-heading">
         <h2 id="votes-heading" className="h3">
-          🗳️ Who voted for whom
+          Who voted for whom
         </h2>
         {reveal.totalVotes ? (
           <ul className="votes">
@@ -90,12 +86,12 @@ export function Reveal({ state, question, reveal }: { state: GameState; question
       {reveal.awards.length > 0 && (
         <section className="card stack" aria-labelledby="awards-heading">
           <h2 id="awards-heading" className="h3">
-            ⚡ Fastest right guesses
+            Fastest right guesses
           </h2>
           <ol className="awards">
             {reveal.awards.map((a, i) => (
               <li key={a.id} className="award">
-                <span aria-hidden="true">{MEDALS[i] ?? "✅"}</span>
+                <span className="rank">{i + 1}</span>
                 <span className="n">
                   {a.id === state.youId ? "You" : a.name} · {a.seconds}s
                 </span>
@@ -108,7 +104,7 @@ export function Reveal({ state, question, reveal }: { state: GameState; question
 
       <section className="card stack" aria-labelledby="board-heading">
         <h2 id="board-heading" className="h3">
-          🏆 Leaderboard
+          Leaderboard
         </h2>
         <Scoreboard entries={leaderboard} youId={state.youId} />
       </section>
@@ -129,7 +125,7 @@ function VoteRow({ entry, max, won, youId }: { entry: TallyEntry; max: number; w
     <li className={`vote-row${won ? " win" : ""}`} style={tint}>
       <div className="head">
         <Avatar player={entry} size="sm" />
-        <span className="n">{won ? `👑 ${entry.name}` : entry.name}</span>
+        <span className="n">{entry.name}</span>
         <span className="count">
           {entry.votes}
           <span className="sr-only"> votes</span>

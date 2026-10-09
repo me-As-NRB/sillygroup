@@ -30,9 +30,9 @@ describe("labels", () => {
   });
 
   it("describes themes and tone", () => {
-    expect(genresLabel([])).toBe("🎲 Random Mix");
+    expect(genresLabel([])).toBe("Random Mix");
     expect(themeLabel({ genres: ["trek"], tone: "savage", language: "hinglish", timer: 20, context: "" })).toBe(
-      "🥾 Trek & Hiking  |  🔥 Savage  |  🇮🇳 Hinglish"
+      "Trek & Hiking · Savage · Hinglish"
     );
   });
 });

@@ -11,7 +11,7 @@ export function PlayerChip({ player, state }: { player: PlayerView; state: GameS
           {player.name}
         </div>
         <div className="row" style={{ gap: 4 }}>
-          {player.id === state.hostId && <span className="tag">👑 host</span>}
+          {player.id === state.hostId && <span className="tag">host</span>}
           {player.id === state.youId && <span className="tag good">you</span>}
           {!player.connected && <span className="muted small">offline</span>}
         </div>

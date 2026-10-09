@@ -83,9 +83,6 @@ export function Home() {
   return (
     <main className="app">
       <div className="logo">
-        <span className="emoji" aria-hidden="true">
-          👀
-        </span>
         <h1>
           Who In The <span className="grad-text">Room</span>
         </h1>
@@ -94,13 +91,13 @@ export function Home() {
 
       <ul className="how" aria-label="How it works">
         <li>
-          <b aria-hidden="true">🙋</b>Everyone joins with their name
+          <b aria-hidden="true">1</b>Everyone joins with their name
         </li>
         <li>
-          <b aria-hidden="true">🗳️</b>Vote who fits the question
+          <b aria-hidden="true">2</b>Vote who fits the question
         </li>
         <li>
-          <b aria-hidden="true">⚡</b>Match the majority, fast
+          <b aria-hidden="true">3</b>Match the majority, fast
         </li>
       </ul>
 
@@ -131,14 +128,14 @@ export function Home() {
         ) : (
           <>
             <button type="submit" className="btn primary block" disabled={busy}>
-              🎉 Create a room
+              Create a room
             </button>
             <div className="divider">or join friends</div>
             {joinBlock}
           </>
         )}
       </form>
-      <p className="muted small center">3–20 players · works on phones and laptops · 🔊 sound on</p>
+      <p className="muted small center">2–20 players · works on phones and laptops</p>
     </main>
   );
 }

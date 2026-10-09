@@ -51,7 +51,7 @@ export function Lobby({ state }: { state: GameState }) {
         </div>
         <div className="room-code grad-text">{state.code}</div>
         <button className="btn primary" onClick={invite}>
-          📨 Invite friends
+          Invite friends
         </button>
       </section>
 
@@ -73,9 +73,6 @@ export function Lobby({ state }: { state: GameState }) {
         <HostSetup state={state} online={online} />
       ) : (
         <section className="card stack center" aria-live="polite">
-          <div style={{ fontSize: 40 }} aria-hidden="true">
-            ⏳
-          </div>
           <h2 className="h3">Waiting for {host?.name ?? "the host"} to start…</h2>
           <p className="muted" style={{ margin: 0 }}>
             {themeLabel(state.settings)}
@@ -125,7 +122,7 @@ function HostSetup({ state, online }: { state: GameState; online: number }) {
   return (
     <section className="card stack" aria-labelledby="setup-heading">
       <h2 id="setup-heading" className="h3">
-        🎛️ Game setup
+        Game setup
       </h2>
       <div className="row spread">
         <span className="label" id="themes-label">
@@ -139,7 +136,7 @@ function HostSetup({ state, online }: { state: GameState; online: number }) {
         className="input"
         type="search"
         aria-label="Search themes"
-        placeholder="🔍 Search 50 themes…"
+        placeholder="Search 50 themes…"
         style={{ padding: "10px 14px", fontSize: ".95rem" }}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
@@ -149,7 +146,7 @@ function HostSetup({ state, online }: { state: GameState; online: number }) {
           const on = chosen.includes(g.id);
           return (
             <button key={g.id} type="button" className={`chip${on ? " on" : ""}`} aria-pressed={on} onClick={() => toggle(g.id)}>
-              <span aria-hidden="true">{g.emoji}</span> {g.label}
+              {g.label}
             </button>
           );
         })}
@@ -172,20 +169,20 @@ function HostSetup({ state, online }: { state: GameState; online: number }) {
       />
       <p id="ai-note" className="muted small" style={{ margin: 0 }}>
         {state.aiEnabled
-          ? "✨ AI writes 10 fresh questions from your theme, tone and description."
+          ? "AI writes 10 fresh questions from your theme, tone and description."
           : "Using the built-in questions (AI not set up). Your theme, tone and language still pick matching ones."}
       </p>
 
       <Segmented
         label="Language"
         value={settings.language}
-        options={LANGUAGES.map((l) => ({ value: l.id, label: `${l.emoji} ${l.label}`, hint: l.hint }))}
+        options={LANGUAGES.map((l) => ({ value: l.id, label: l.label, hint: l.hint }))}
         onChange={(language) => updateSettings({ language })}
       />
       <Segmented
         label="How blunt?"
         value={settings.tone}
-        options={TONES.map((t) => ({ value: t.id, label: `${t.emoji} ${t.label}`, hint: t.hint }))}
+        options={TONES.map((t) => ({ value: t.id, label: t.label, hint: t.hint }))}
         onChange={(tone) => updateSettings({ tone })}
       />
       <Segmented
@@ -203,7 +200,7 @@ function HostSetup({ state, online }: { state: GameState; online: number }) {
           start();
         }}
       >
-        {enough ? "🚀 Start game (10 questions)" : `Need ${missing} more player${missing === 1 ? "" : "s"}`}
+        {enough ? "Start game (10 questions)" : `Need ${missing} more player${missing === 1 ? "" : "s"}`}
       </button>
     </section>
   );

@@ -24,7 +24,25 @@ export function Reveal({ state, question, reveal }: { state: GameState; question
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const verdict = reveal.winners.length ? reveal.winners.map((w) => w.name).join(" & ") : "Nobody voted!";
+  const couple = state.settings.mode === "couple";
+  const split = reveal.winners.length === 0 && reveal.totalVotes > 0;
+  const verdict = reveal.winners.length
+    ? reveal.winners.map((w) => w.name).join(" & ")
+    : split
+      ? couple
+        ? "No match"
+        : "No agreement"
+      : "Nobody voted!";
+  const label = split
+    ? couple
+      ? "You picked different people"
+      : "Everyone picked someone different"
+    : reveal.winners.length > 1
+      ? "It's a tie!"
+      : couple
+        ? "You both picked"
+        : "The group says";
+  const missed = couple ? "Not a match this time." : "Not this time. The group thought differently.";
   const leaderboard = [...state.players].sort((a, b) => b.score - a.score).slice(0, 5);
 
   return (
@@ -42,7 +60,7 @@ export function Reveal({ state, question, reveal }: { state: GameState; question
           {question.text}
         </p>
         <div className="winner">
-          <div className="label">{reveal.winners.length > 1 ? "It's a tie!" : "The group says"}</div>
+          <div className="label">{label}</div>
           <div className="avatars">
             {reveal.winners.map((w) => (
               <Avatar key={w.id} player={w} size="lg" />
@@ -53,7 +71,7 @@ export function Reveal({ state, question, reveal }: { state: GameState; question
         {myAward ? (
           <div className="result-banner good">You got it! +{myAward.points} points</div>
         ) : myVote ? (
-          <div className="result-banner bad">Not this time. The group thought differently.</div>
+          <div className="result-banner bad">{missed}</div>
         ) : (
           <div className="result-banner none">You didn't vote on this one.</div>
         )}

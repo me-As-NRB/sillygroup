@@ -314,6 +314,12 @@ textarea.input { resize: vertical; min-height: 76px; font-size: .98rem; }
 .podium .p3 .block { height: 72px; background: linear-gradient(180deg, #e3a57a, #c47a4a); }
 .podium .pts { font-size: .85rem; color: var(--muted); font-weight: 600; }
 
+/* ---- about footer ---- */
+.about { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); text-align: center; font-size: .8rem; color: var(--muted); }
+.about p { margin: 2px 0; }
+.about strong { color: var(--text); font-weight: 600; }
+.about a { color: var(--brand-strong); }
+
 /* ---- share card ---- */
 .share-preview { width: min(100%, 320px); aspect-ratio: 4 / 5; margin: 0 auto; border-radius: 18px; box-shadow: var(--shadow); background: var(--brand-soft); object-fit: cover; }
 .share-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }

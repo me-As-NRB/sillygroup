@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import { MAX_GENRES, genreById, isLanguageId, isToneId } from "../shared/genres";
+import { MAX_GENRES, genreById, isLanguageId, isModeId, isToneId } from "../shared/genres";
 import {
   MAX_CONTEXT_LENGTH,
   MAX_PLAYERS,
@@ -91,7 +91,7 @@ export class Room {
   readonly players = new Map<string, Player>();
   hostId: string | null = null;
   phase: Phase = "lobby";
-  settings: Settings = { timer: 20, genres: [], context: "", tone: "blunt", language: "hinglish" };
+  settings: Settings = { timer: 20, genres: [], context: "", tone: "blunt", language: "hinglish", mode: "friends" };
   emptySince: number | null = null;
 
   private questions: string[] = [];
@@ -227,15 +227,22 @@ export class Room {
     if (typeof patch.context === "string") this.settings.context = patch.context.trim().slice(0, MAX_CONTEXT_LENGTH);
     if (isToneId(patch.tone)) this.settings.tone = patch.tone;
     if (isLanguageId(patch.language)) this.settings.language = patch.language;
+    if (isModeId(patch.mode)) this.settings.mode = patch.mode;
     this.onChange(this);
   }
 
   /** Returns false when the request is not allowed right now. */
   start(byPlayerId: string): boolean {
     if (byPlayerId !== this.hostId || !["lobby", "final"].includes(this.phase)) return false;
-    if (this.connectedPlayers().length < MIN_PLAYERS) return false;
+    if (!this.canStart()) return false;
     void this.startRound();
     return true;
+  }
+
+  /** Friends mode needs MIN_PLAYERS online; couple mode needs exactly two. */
+  canStart(): boolean {
+    const online = this.connectedPlayers().length;
+    return this.settings.mode === "couple" ? online === 2 : online >= MIN_PLAYERS;
   }
 
   toLobby(byPlayerId: string): void {
@@ -275,17 +282,18 @@ export class Room {
     tracker.trackTone(this.settings.tone);
 
     const seq = ++this.roundSeq;
-    const { genres, context, tone, language } = this.settings;
+    const { genres, context, tone, language, mode } = this.settings;
     // Everything this host has seen in any room, plus this room's rounds (most recent last).
     const seen = [...new Set([...this.deps.questionHistory.get(this.hostKey), ...this.used])];
     // Ask for a few extra, each about a different life area, then keep the most varied ten.
-    const angles = sampleAngles(QUESTIONS_PER_ROUND + 4);
+    const angles = sampleAngles(QUESTIONS_PER_ROUND + 4, Math.random, mode === "couple");
     const aiQuestions = await this.deps.generateQuestions({
       count: angles.length,
       genres: genres.map((id) => genreById.get(id)?.label ?? id),
       context,
       tone,
       language,
+      mode,
       playerCount: this.players.size,
       avoid: seen,
       angles
@@ -302,6 +310,7 @@ export class Room {
         `theme: ${genres.map((id) => genreById.get(id)?.label ?? id).join(", ") || "Random Mix"}`,
         `tone: ${tone}`,
         `language: ${language}`,
+        `mode: ${mode}`,
         `players: ${this.connectedPlayers().map((p) => p.name).join(", ")}`,
         `questions: ${fromAi ? `${fromAi} AI` : "built-in"}`,
         context ? `group description: "${context}"` : ""
@@ -311,12 +320,12 @@ export class Room {
     );
     if (questions.length < QUESTIONS_PER_ROUND) {
       const avoid = [...seen, ...questions];
-      const candidates = pickFromBank(40, avoid, { genres, tone, language });
+      const candidates = pickFromBank(40, avoid, { genres, tone, language, mode });
       questions = [...questions, ...pickDiverse(candidates, avoid, QUESTIONS_PER_ROUND - questions.length)];
     }
     if (questions.length < QUESTIONS_PER_ROUND) {
       // Nearly everything has been played already: allow similar ones rather than a short round.
-      questions = [...questions, ...pickFromBank(QUESTIONS_PER_ROUND - questions.length, [...this.used, ...questions], { genres, tone, language })];
+      questions = [...questions, ...pickFromBank(QUESTIONS_PER_ROUND - questions.length, [...this.used, ...questions], { genres, tone, language, mode })];
     }
     this.questions = questions;
     this.used.push(...questions);
@@ -383,7 +392,7 @@ export class Room {
     });
     this.log(
       [
-        `✅ Q${this.qIndex + 1} answer: ${tally.winners.map(nameOf).join(" & ") || "nobody (no votes)"}`,
+        `✅ Q${this.qIndex + 1} answer: ${tally.winners.map(nameOf).join(" & ") || (q.votes.size ? "no agreement (everyone picked someone different)" : "nobody (no votes)")}`,
         tally.winners.length ? `(${tally.topVotes}/${q.votes.size} votes)` : "",
         awards.length ? `· points: ${awards.map((a) => `${a.name} +${a.points}`).join(", ")}` : "",
         this.reveal.noVote.length ? `· no vote: ${this.reveal.noVote.map((p) => p.name).join(", ")}` : ""
@@ -405,11 +414,17 @@ export class Room {
         .map((p) => ({ id: p.id, name: p.name, score: p.score }))
         .sort((a, b) => b.score - a.score),
       highlights: pickHighlights(this.history),
-      genres: [...this.settings.genres]
+      genres: [...this.settings.genres],
+      mode: this.settings.mode,
+      matches: this.history.filter((h) => h.totalVotes >= 2 && h.topVotes === h.totalVotes).length,
+      totalQuestions: this.history.length
     };
     this.deps.tracker.track("rounds_finished");
     this.deps.tracker.track("players_in_finished_rounds", this.players.size);
-    this.log(`🏆 Round ${this.rounds} finished · ${this.final.leaderboard.map((p) => `${p.name} ${p.score}`).join(", ")}`);
+    this.log(
+      `🏆 Round ${this.rounds} finished · ${this.final.leaderboard.map((p) => `${p.name} ${p.score}`).join(", ")}` +
+        (this.settings.mode === "couple" ? ` · matched ${this.final.matches}/${this.final.totalQuestions}` : "")
+    );
     this.onChange(this);
   }
 
@@ -426,6 +441,7 @@ export class Room {
       aiEnabled: this.deps.aiEnabled,
       settings: { ...this.settings, genres: [...this.settings.genres] },
       minPlayers: MIN_PLAYERS,
+      canStart: this.canStart(),
       players: [...this.players.values()].map((p) => ({
         id: p.id,
         name: p.name,

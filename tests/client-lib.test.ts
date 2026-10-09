@@ -31,8 +31,11 @@ describe("labels", () => {
 
   it("describes themes and tone", () => {
     expect(genresLabel([])).toBe("Random Mix");
-    expect(themeLabel({ genres: ["trek"], tone: "savage", language: "hinglish", timer: 20, context: "" })).toBe(
+    expect(themeLabel({ genres: ["trek"], tone: "savage", language: "hinglish", mode: "friends", timer: 20, context: "" })).toBe(
       "Trek & Hiking · Savage · Hinglish"
+    );
+    expect(themeLabel({ genres: [], tone: "blunt", language: "en", mode: "couple", timer: 20, context: "" })).toBe(
+      "Couple mode · Random Mix · Blunt · English"
     );
   });
 });

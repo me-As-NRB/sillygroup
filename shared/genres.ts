@@ -1,4 +1,4 @@
-import type { LanguageId, ToneId } from "./types";
+import type { LanguageId, ModeId, ToneId } from "./types";
 
 export interface Genre {
   id: string;
@@ -86,12 +86,28 @@ export const LANGUAGES: readonly Language[] = [
   { id: "en", emoji: "🔤", label: "English", hint: "English only" }
 ];
 
+export interface Mode {
+  id: ModeId;
+  label: string;
+  hint: string;
+}
+
+export const MODES: readonly Mode[] = [
+  { id: "friends", label: "Friends", hint: "Any group, 2–20 players" },
+  { id: "couple", label: "Couple", hint: "For 2 partners: do you agree?" }
+];
+
 /** One theme per game keeps the questions focused. */
 export const MAX_GENRES = 1;
 
 export const genreById = new Map(GENRES.map((g) => [g.id, g]));
 export const toneById = new Map(TONES.map((t) => [t.id, t]));
 export const languageById = new Map(LANGUAGES.map((l) => [l.id, l]));
+export const modeById = new Map(MODES.map((m) => [m.id, m]));
+
+export function isModeId(value: unknown): value is ModeId {
+  return typeof value === "string" && modeById.has(value as ModeId);
+}
 
 export function isToneId(value: unknown): value is ToneId {
   return typeof value === "string" && toneById.has(value as ToneId);

@@ -98,14 +98,53 @@ describe("host settings", () => {
     expect(two.room.start(two.ids[0])).toBe(true);
   });
 
-  it("counts a split vote between two players as a tie that both win", async () => {
+  it("gives no points when two players pick different people", async () => {
     const { room, ids } = setup(2);
     await startAndWait(room, ids[0]);
     room.vote(ids[0], ids[1]);
     room.vote(ids[1], ids[0]);
     const reveal = room.stateFor(ids[0]).reveal!;
-    expect(reveal.winners).toHaveLength(2);
-    expect(reveal.awards.map((a) => a.points)).toEqual([1000, 850]);
+    expect(reveal.winners).toEqual([]);
+    expect(reveal.totalVotes).toBe(2);
+    expect(reveal.awards).toEqual([]);
+  });
+});
+
+describe("couple mode", () => {
+  it("defaults to friends; only the host can switch, and it needs exactly two players", () => {
+    const three = setup(3);
+    expect(three.room.settings.mode).toBe("friends");
+    three.room.updateSettings(three.ids[1], { mode: "couple" });
+    expect(three.room.settings.mode).toBe("friends");
+    three.room.updateSettings(three.ids[0], { mode: "couple" });
+    expect(three.room.settings.mode).toBe("couple");
+    expect(three.room.stateFor(three.ids[0]).canStart).toBe(false);
+    expect(three.room.start(three.ids[0])).toBe(false);
+
+    const two = setup(2);
+    two.room.updateSettings(two.ids[0], { mode: "couple" });
+    expect(two.room.stateFor(two.ids[0]).canStart).toBe(true);
+    expect(two.room.start(two.ids[0])).toBe(true);
+  });
+
+  it("asks the AI for couple questions about relationship topics and counts matches", async () => {
+    const generateQuestions = vi.fn<(opts: GenerateOptions) => Promise<string[]>>(async () => []);
+    const { room, ids } = setup(2, makeDeps({ generateQuestions }));
+    room.updateSettings(ids[0], { mode: "couple" });
+    await startAndWait(room, ids[0]);
+
+    const call = generateQuestions.mock.calls[0][0];
+    expect(call.mode).toBe("couple");
+    expect(call.angles).toHaveLength(14);
+
+    for (let i = 0; i < QUESTIONS_PER_ROUND; i++) {
+      // Agree on the first 7 questions, disagree on the last 3.
+      room.vote(ids[0], ids[1]);
+      room.vote(ids[1], i < 7 ? ids[1] : ids[0]);
+      vi.advanceTimersByTime(DEFAULT_TIMINGS.revealMs);
+    }
+    const final = room.stateFor(ids[0]).final!;
+    expect(final).toMatchObject({ mode: "couple", matches: 7, totalQuestions: 10 });
   });
 });
 

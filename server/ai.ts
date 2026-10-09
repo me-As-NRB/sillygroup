@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { LanguageId, ToneId } from "../shared/types";
+import type { LanguageId, ModeId, ToneId } from "../shared/types";
 
 // Provider is picked from whichever key is set in the environment:
 //   OPENROUTER_API_KEY -> OpenRouter (free models by default)
@@ -20,6 +20,7 @@ export interface GenerateOptions {
   context: string;
   tone: ToneId;
   language: LanguageId;
+  mode: ModeId;
   playerCount: number;
   avoid: readonly string[];
   /** One distinct life area per question, freshly sampled each round. */
@@ -75,11 +76,30 @@ const LANGUAGE_GUIDE: Record<LanguageId, string> = {
   en: "Language: simple, natural English."
 };
 
-export function buildPrompt({ count, genres, context, tone, language, playerCount, avoid, angles }: GenerateOptions): string {
+const COUPLE_GUIDE = [
+  "This round is for a COUPLE: two partners in a romantic relationship playing together.",
+  "Both vote for one of the two of them; they score only when they pick the same partner, so each question tests how well they know each other.",
+  "Every question compares the two partners: 'Who is more likely to…', 'Who between you…', 'Kaun pehle sorry bolta hai?'.",
+  "Cover relationship life: dates, fights and making up, jealousy, romance, texting, chores, money, families and in-laws, friends, future plans, habits, secrets, who loves whom more.",
+  "Never mention 'the group' or other people playing.",
+  "Romantic and cheeky is welcome; sexual or explicit content is not."
+].join(" ");
+
+const COUPLE_EXAMPLES = [
+  "Who is more likely to forget your anniversary?",
+  "Who gets jealous faster when the other is texting someone?",
+  "Ladai ke baad pehle sorry kaun bolta hai?",
+  "Who would plan the more over-the-top surprise date?"
+];
+
+export function buildPrompt({ count, genres, context, tone, language, mode, playerCount, avoid, angles }: GenerateOptions): string {
   const genreText = genres.length ? genres.join(", ") : "a random mix of everyday situations";
+  const couple = mode === "couple";
   return [
-    `Write ${count} questions for a party game played by ${playerCount} people who know each other well.`,
-    "Every player votes for the person in the group who best fits the question; the most-voted name wins.",
+    couple
+      ? `Write ${count} questions for a two-player game played by a couple.`
+      : `Write ${count} questions for a party game played by ${playerCount} people who know each other well.`,
+    couple ? COUPLE_GUIDE : "Every player votes for the person in the group who best fits the question; the most-voted name wins.",
     `Theme of this round: ${genreText}. Every question must clearly belong to the theme.`,
     angles.length
       ? `Each question must be about a DIFFERENT part of life, combined with the theme. Use these, one per question, in order:\n${angles.map((a, i) => `${i + 1}. ${a}`).join("\n")}\nNo two questions may share the same situation, activity or punchline.`
@@ -90,8 +110,10 @@ export function buildPrompt({ count, genres, context, tone, language, playerCoun
     TONE_GUIDE[tone] ?? TONE_GUIDE.blunt,
     LANGUAGE_GUIDE[language] ?? LANGUAGE_GUIDE.en,
     "Make each one specific and vivid rather than generic. Examples of the style:",
-    ...(TONE_EXAMPLES[tone] ?? TONE_EXAMPLES.blunt).map((e) => `- ${e}`),
-    "Each question must be answerable with one person's name from the group (\"Who…\" / \"Kaun…\").",
+    ...(couple ? COUPLE_EXAMPLES : (TONE_EXAMPLES[tone] ?? TONE_EXAMPLES.blunt)).map((e) => `- ${e}`),
+    couple
+      ? "Each question must be answerable with one of the two partners (\"Who…\" / \"Kaun…\")."
+      : "Each question must be answerable with one person's name from the group (\"Who…\" / \"Kaun…\").",
     "Personal and sensitive is fine; vulgar is not. Never sexual or explicit, no slurs, nothing about religion, caste, ethnicity, disability, illness, self-harm, weight or body shape.",
     "One sentence each, under 110 characters, no numbering, no two questions about the same idea.",
     avoid.length

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FinalView, GameState, LeaderboardEntry } from "../../../shared/types";
+import { About } from "../components/About";
 import { Avatar } from "../components/Avatar";
 import { Scoreboard } from "../components/Players";
 import { TopBar } from "../components/TopBar";
@@ -20,16 +21,34 @@ export function Final({ state, final }: { state: GameState; final: FinalView }) 
     confetti(90);
   }, []);
 
+  const couple = final.mode === "couple";
+  const ratio = final.totalQuestions ? final.matches / final.totalQuestions : 0;
+  const WinnerHeading = couple ? "h2" : "h1"; // one h1 per screen
+  const verdict = ratio >= 0.8 ? "Made for each other." : ratio >= 0.5 ? "Pretty in sync." : "Opposites attract?";
+
   return (
     <main className="app">
       <TopBar code={state.code} />
+      {couple && (
+        <section className="card stack center" aria-labelledby="match-heading">
+          <div className="muted" style={{ fontWeight: 600 }}>
+            How well do you know each other?
+          </div>
+          <h1 id="match-heading" className="display grad-text" style={{ fontSize: "clamp(2rem,9vw,2.8rem)" }}>
+            You matched on {final.matches} of {final.totalQuestions}
+          </h1>
+          <p className="muted" style={{ margin: 0 }}>
+            {verdict}
+          </p>
+        </section>
+      )}
       <section className="card stack center" aria-labelledby="winner-heading">
         <div className="muted" style={{ fontWeight: 600 }}>
           {tied.length > 1 ? "Joint winners" : "Winner of the round"}
         </div>
-        <h1 id="winner-heading" className="display grad-text" style={{ fontSize: "clamp(2rem,9vw,2.8rem)" }}>
+        <WinnerHeading id="winner-heading" className="display grad-text" style={{ fontSize: couple ? "1.6rem" : "clamp(2rem,9vw,2.8rem)" }}>
           {tied.length ? tied.map((p) => p.name).join(" & ") : "No one scored!"}
-        </h1>
+        </WinnerHeading>
         <div className="podium" aria-label="Top three">
           <Spot entry={board[1]} place={2} youId={state.youId} />
           <Spot entry={board[0]} place={1} youId={state.youId} />
@@ -60,6 +79,7 @@ export function Final({ state, final }: { state: GameState; final: FinalView }) 
       ) : (
         <p className="muted center">Waiting for the host to start another round…</p>
       )}
+      <About />
     </main>
   );
 }

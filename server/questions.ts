@@ -1,4 +1,4 @@
-import type { LanguageId, ToneId } from "../shared/types";
+import type { LanguageId, ModeId, ToneId } from "../shared/types";
 
 // Backup question bank, used when no AI key is set or the AI call fails.
 
@@ -417,10 +417,79 @@ export const SAVAGE_HINGLISH_BANK: readonly string[] = [
   "Kis pe secret share karna sabse bada risk hai?"
 ];
 
+// Couple mode: two partners vote and score only when they pick the same one.
+export const COUPLE_BANK: readonly string[] = [
+  "Who said 'I love you' first?",
+  "Who is more likely to forget your anniversary?",
+  "Who takes longer to get ready for a date?",
+  "Who is the better cook between you two?",
+  "Who apologises first after a fight?",
+  "Who is more likely to plan a surprise trip?",
+  "Who steals the blanket at night?",
+  "Who is more romantic?",
+  "Who spends more money on online shopping?",
+  "Who is the bigger foodie?",
+  "Who would win an argument about directions?",
+  "Who is more likely to cry during a movie together?",
+  "Who texts more 'good morning' messages?",
+  "Who is more organised at home?",
+  "Who would handle a flat tyre on a road trip better?",
+  "Who is more likely to binge a whole series without the other?",
+  "Who gets hangry faster?",
+  "Who is the better dancer?",
+  "Who is closer to the other's family?",
+  "Who is more likely to post your photos on social media?",
+  "Who falls asleep first during a movie night?",
+  "Who makes the big decisions in this relationship?",
+  "Who is more likely to remember small details about the first date?",
+  "Who would survive longer without their phone?"
+];
+
+export const COUPLE_HINGLISH_BANK: readonly string[] = [
+  "Ladai ke baad pehle sorry kaun bolta hai?",
+  "Kaun date pe hamesha late aata hai?",
+  "Kaun zyada possessive hai?",
+  "Kaun 'tum bolo kya khaana hai' bolke phir sab reject karta hai?",
+  "Kaun zyada filmy romantic hai?",
+  "Kaun gussa hone pe sabse zyada der tak muh phula ke rehta hai?",
+  "Kaun shopping pe zyada paise udaata hai?",
+  "Kaun raat ko zyada der tak phone chalata hai?",
+  "Kaun dusre ke ghar walon ka zyada favourite hai?",
+  "Kaun pehle 'hum log kab milenge?' poochta hai?",
+  "Kaun zyada nakhre karta hai?",
+  "Kaun anniversary ki date bhool sakta hai?",
+  "Kaun zyada jealous hota hai?",
+  "Kaun surprise gift dene mein better hai?",
+  "Kaun khaana order karte waqt sabse zyada time lagata hai?",
+  "Kaun breakup ka natak karke 5 minute mein maan jaata hai?",
+  "Kaun selfie mein sabse zyada retakes karwata hai?",
+  "Kaun relationship ka asli boss hai?",
+  "Kaun 'main naraz nahi hoon' bolke sabse zyada naraz hota hai?",
+  "Kaun pehle shaadi ki baat chhedta hai?"
+];
+
+export const COUPLE_SAVAGE_BANK: readonly string[] = [
+  "Who still checks their ex's profile sometimes?",
+  "Who has secretly gone through the other's phone?",
+  "Who lies more about where they are?",
+  "Who would be the first to give up in a long-distance relationship?",
+  "Who flirts more with other people?",
+  "Who has a bigger secret they haven't told yet?",
+  "Who is more likely to say sorry without meaning it?",
+  "Who is the more toxic one in a fight?",
+  "Kaun abhi bhi ex ki stories chupke se dekhta hai?",
+  "Kaun dusre ka phone chupke se check karta hai?",
+  "Kaun 'bas dost hai' bolke sabse zyada jhooth bolta hai?",
+  "Kaun ladai mein purani baatein nikaalta hai?",
+  "Kaun zyada attention ke liye natak karta hai?",
+  "Kiske phone mein zyada secrets hain?"
+];
+
 export interface BankOptions {
   genres?: readonly string[];
   tone?: ToneId;
   language?: LanguageId;
+  mode?: ModeId;
   random?: () => number;
 }
 
@@ -446,7 +515,7 @@ function interleave(lists: string[][]): string[] {
  * exposing questions, then general ones. Hinglish mixes in English ~1 in 3.
  */
 export function pickFromBank(count: number, used: readonly string[], options: BankOptions = {}): string[] {
-  const { genres = [], tone = "blunt", language = "en", random = Math.random } = options;
+  const { genres = [], tone = "blunt", language = "en", mode = "friends", random = Math.random } = options;
   const usedSet = new Set(used.map((q) => q.toLowerCase()));
   const fresh = (list: readonly string[]) => shuffle(list.filter((q) => !usedSet.has(q.toLowerCase())), random);
   const hinglish = language === "hinglish";
@@ -465,6 +534,19 @@ export function pickFromBank(count: number, used: readonly string[], options: Ba
     genres.flatMap((g) => HINGLISH_GENRE_BANK[g] ?? []),
     genres.flatMap((g) => GENRE_BANK[g] ?? [])
   );
+
+  if (mode === "couple") {
+    // Group questions ("who in this group…") don't fit two partners; use couple ones.
+    const isHinglish = (q: string) => COUPLE_HINGLISH_BANK.includes(q) || /\b(kaun|kiske|kiska|kiski)\b/i.test(q);
+    const spicy = tone === "savage" ? fresh(COUPLE_SAVAGE_BANK).filter((q) => hinglish || !isHinglish(q)) : [];
+    let couple = mix(COUPLE_HINGLISH_BANK, COUPLE_BANK);
+    if (new Set([...themed, ...spicy, ...couple]).size < count) {
+      couple = shuffle([...(hinglish ? COUPLE_HINGLISH_BANK : []), ...COUPLE_BANK], random);
+    }
+    const lead = interleave([themed.slice(0, 3), spicy.length ? spicy : couple]);
+    return [...new Set([...lead, ...couple, ...themed])].slice(0, count);
+  }
+
   const savage = tone === "savage" ? mix(SAVAGE_HINGLISH_BANK, SAVAGE_BANK) : [];
   let general = mix(HINGLISH_BANK, QUESTION_BANK);
   // Everything has been played in this room; start the cycle again.

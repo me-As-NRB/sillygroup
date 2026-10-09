@@ -83,6 +83,36 @@ test("three players play a full round", async ({ browser, page: host, contextOpt
   expect(await seriousA11yIssues(host)).toEqual([]);
 });
 
+test("a couple plays a full round and sees how often they matched", async ({ browser, page: host, contextOptions }) => {
+  test.setTimeout(240_000);
+  await host.goto("/");
+  await expect(host.getByText("Made by Nalin Bhardwaj")).toBeVisible();
+  await expect(host.getByRole("link", { name: "nalinbhardwaj@gmail.com" })).toHaveAttribute("href", /^mailto:nalinbhardwaj@gmail\.com/);
+  await host.getByLabel("Your name").fill("Aman");
+  await host.getByRole("button", { name: /Create a room/ }).click();
+  const code = (await host.locator(".room-code").textContent())!.trim();
+
+  const partner = await newPlayer(browser, contextOptions);
+  await partner.goto(`/?room=${code}`);
+  await partner.getByLabel("Your name").fill("Riya");
+  await partner.getByRole("button", { name: "Join", exact: true }).click();
+
+  await host.getByRole("radio", { name: /Couple/ }).click();
+  await host.getByRole("radio", { name: "30s" }).click();
+  await expect(partner.getByText(/Couple mode/)).toBeVisible();
+  await host.getByRole("button", { name: /Start game/ }).click();
+
+  for (let i = 1; i <= 10; i++) {
+    for (const p of [host, partner]) await expect(p.getByText(`Question ${i}/10`)).toBeVisible({ timeout: 15_000 });
+    // Both always pick Riya, so every question is a match.
+    await host.getByRole("group", { name: "Pick a player" }).getByRole("button", { name: /Riya/ }).click();
+    await partner.getByRole("group", { name: "Pick a player" }).getByRole("button", { name: /Riya/ }).click();
+    await expect(host.getByText("You both picked")).toBeVisible();
+  }
+  await expect(host.getByRole("heading", { name: "You matched on 10 of 10" })).toBeVisible({ timeout: 15_000 });
+  await expect(partner.getByText("Made for each other.")).toBeVisible();
+});
+
 test("a refreshed player goes straight back into their room", async ({ page }) => {
   await page.goto("/");
   await page.getByLabel("Your name").fill("Rita Refresh");

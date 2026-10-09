@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { MAX_NAME_LENGTH } from "../../../shared/rules";
+import { About } from "../components/About";
 import { useGameApi, useToast } from "../context";
 import { hasJoinedOthers, rememberName, roomFromUrl, savedName } from "../lib/session";
 
@@ -136,6 +137,7 @@ export function Home() {
         )}
       </form>
       <p className="muted small center">2–20 players · works on phones and laptops</p>
+      <About />
     </main>
   );
 }

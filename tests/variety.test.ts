@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { clientIp } from "../server/app";
-import { ANGLES, HostHistory, pickDiverse, sampleAngles, tooSimilar } from "../server/variety";
+import { ANGLES, COUPLE_ANGLES, HostHistory, pickDiverse, sampleAngles, tooSimilar } from "../server/variety";
 
 describe("tooSimilar", () => {
   it("catches the same idea worded differently", () => {
@@ -37,6 +37,11 @@ describe("sampleAngles", () => {
     expect(a.every((x) => (ANGLES as readonly string[]).includes(x))).toBe(true);
     const rounds = Array.from({ length: 5 }, () => sampleAngles(14).join("|"));
     expect(new Set(rounds).size).toBeGreaterThan(1);
+  });
+
+  it("uses relationship topics in couple mode", () => {
+    const a = sampleAngles(14, Math.random, true);
+    expect(a.every((x) => (COUPLE_ANGLES as readonly string[]).includes(x))).toBe(true);
   });
 });
 

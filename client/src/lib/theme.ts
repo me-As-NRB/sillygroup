@@ -10,9 +10,14 @@ export function genresLabel(genres: readonly string[]): string {
   return labels.length ? labels.join(" · ") : "Random Mix";
 }
 
-/** Theme, tone and language, e.g. "Trek & Hiking · Savage · Hinglish". */
+/** Theme, tone and language, e.g. "Trek & Hiking · Savage · Hinglish" (plus "Couple mode"). */
 export function themeLabel(settings: Settings): string {
-  return [genresLabel(settings.genres), toneById.get(settings.tone)?.label, languageById.get(settings.language)?.label]
+  return [
+    settings.mode === "couple" ? "Couple mode" : null,
+    genresLabel(settings.genres),
+    toneById.get(settings.tone)?.label,
+    languageById.get(settings.language)?.label
+  ]
     .filter(Boolean)
     .join(" · ");
 }

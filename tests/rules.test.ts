@@ -50,6 +50,18 @@ describe("tallyVotes", () => {
     expect(t.correctVoters).toHaveLength(4);
   });
 
+  it("has no winner when every vote went to a different person", () => {
+    const t = tallyVotes(players, votes([["a", "b", 1], ["b", "a", 2]]), nameOf);
+    expect(t.winners).toEqual([]);
+    expect(t.correctVoters).toEqual([]);
+    const three = tallyVotes(players, votes([["a", "b", 1], ["b", "c", 2], ["c", "a", 3]]), nameOf);
+    expect(three.winners).toEqual([]);
+  });
+
+  it("lets a single voter decide alone", () => {
+    expect(tallyVotes(players, votes([["a", "b", 1]]), nameOf).winners).toEqual(["b"]);
+  });
+
   it("has no winner when nobody voted", () => {
     const t = tallyVotes(players, new Map(), nameOf);
     expect(t.winners).toEqual([]);

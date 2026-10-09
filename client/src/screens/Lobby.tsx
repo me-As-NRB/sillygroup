@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { GENRES, LANGUAGES, MAX_GENRES, TONES, genreById } from "../../../shared/genres";
+import { GENRES, LANGUAGES, MAX_GENRES, MODES, TONES, genreById } from "../../../shared/genres";
 import { MAX_CONTEXT_LENGTH, TIMER_CHOICES } from "../../../shared/rules";
 import type { GameState } from "../../../shared/types";
+import { About } from "../components/About";
 import { PlayerChip } from "../components/Players";
 import { Segmented } from "../components/Segmented";
 import { TopBar } from "../components/TopBar";
@@ -84,6 +85,7 @@ export function Lobby({ state }: { state: GameState }) {
           )}
         </section>
       )}
+      <About />
     </main>
   );
 }
@@ -116,8 +118,13 @@ function HostSetup({ state, online }: { state: GameState; online: number }) {
   // Single choice: picking a theme replaces the previous one; picking it again clears it.
   const toggle = (id: string) => updateSettings({ genres: chosen.includes(id) ? [] : [id].slice(0, MAX_GENRES) });
 
-  const enough = online >= state.minPlayers;
+  const couple = settings.mode === "couple";
   const missing = state.minPlayers - online;
+  const startLabel = state.canStart
+    ? "Start game (10 questions)"
+    : couple
+      ? "Couple mode needs exactly 2 players"
+      : `Need ${missing} more player${missing === 1 ? "" : "s"}`;
 
   return (
     <section className="card stack" aria-labelledby="setup-heading">
@@ -174,6 +181,12 @@ function HostSetup({ state, online }: { state: GameState; online: number }) {
       </p>
 
       <Segmented
+        label="Who is playing?"
+        value={settings.mode}
+        options={MODES.map((m) => ({ value: m.id, label: m.label, hint: m.hint }))}
+        onChange={(mode) => updateSettings({ mode })}
+      />
+      <Segmented
         label="Language"
         value={settings.language}
         options={LANGUAGES.map((l) => ({ value: l.id, label: l.label, hint: l.hint }))}
@@ -194,13 +207,13 @@ function HostSetup({ state, online }: { state: GameState; online: number }) {
 
       <button
         className="btn primary block"
-        disabled={!enough}
+        disabled={!state.canStart}
         onClick={() => {
           if (context !== settings.context) updateSettings({ context });
           start();
         }}
       >
-        {enough ? "Start game (10 questions)" : `Need ${missing} more player${missing === 1 ? "" : "s"}`}
+        {startLabel}
       </button>
     </section>
   );

@@ -4,6 +4,7 @@
 export type Phase = "lobby" | "loading" | "question" | "reveal" | "final";
 export type ToneId = "friendly" | "blunt" | "savage";
 export type LanguageId = "hinglish" | "en";
+export type ModeId = "friends" | "couple";
 
 export interface Settings {
   timer: number;
@@ -12,6 +13,8 @@ export interface Settings {
   context: string;
   tone: ToneId;
   language: LanguageId;
+  /** "couple" is for two partners playing together. */
+  mode: ModeId;
 }
 
 export interface PlayerRef {
@@ -48,6 +51,7 @@ export interface Award extends PlayerRef {
 }
 
 export interface RevealView {
+  /** Empty when nobody voted or when every vote went to a different person (no agreement). */
   winners: PlayerRef[];
   tally: TallyEntry[];
   noVote: PlayerRef[];
@@ -70,6 +74,10 @@ export interface FinalView {
   leaderboard: LeaderboardEntry[];
   highlights: Highlight[];
   genres: string[];
+  mode: ModeId;
+  /** Questions where everyone who voted picked the same person. */
+  matches: number;
+  totalQuestions: number;
 }
 
 export interface GameState {
@@ -80,6 +88,8 @@ export interface GameState {
   aiEnabled: boolean;
   settings: Settings;
   minPlayers: number;
+  /** Whether the host could start right now (player count fits the mode). */
+  canStart: boolean;
   players: PlayerView[];
   question: QuestionView | null;
   reveal: RevealView | null;

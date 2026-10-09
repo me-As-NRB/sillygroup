@@ -31,14 +31,17 @@ export interface Tally {
 
 /**
  * Counts votes for one question. Every player tied on the most votes is a
- * winner; nobody wins when nobody voted.
+ * winner. Nobody wins when nobody voted, or when every vote went to a
+ * different person: with two players that means "you didn't agree", so the
+ * faster clicker can't score just by voting.
  */
 export function tallyVotes(options: PlayerRef[], votes: Map<string, VoteRecord>, nameOf: (id: string) => string): Tally {
   const counts = new Map(options.map((o) => [o.id, 0]));
   for (const { targetId } of votes.values()) counts.set(targetId, (counts.get(targetId) ?? 0) + 1);
 
   const topVotes = Math.max(0, ...counts.values());
-  const winners = topVotes > 0 ? [...counts].filter(([, c]) => c === topVotes).map(([id]) => id) : [];
+  const noAgreement = topVotes === 1 && votes.size > 1;
+  const winners = topVotes > 0 && !noAgreement ? [...counts].filter(([, c]) => c === topVotes).map(([id]) => id) : [];
   const byTime = [...votes].sort((a, b) => a[1].at - b[1].at);
 
   const entries = [...counts]

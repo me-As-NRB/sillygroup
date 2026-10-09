@@ -42,9 +42,37 @@ export const ANGLES = [
   "risk-taking and dares"
 ] as const;
 
+/** Parts of a relationship, used instead of ANGLES in couple mode. */
+export const COUPLE_ANGLES = [
+  "dates and date planning",
+  "fights and making up",
+  "jealousy",
+  "texting and calls",
+  "romance and surprises",
+  "anniversaries and gifts",
+  "chores and living together",
+  "money and spending",
+  "in-laws and families",
+  "friends of each other",
+  "future plans, marriage and kids",
+  "travel together",
+  "food and cooking for each other",
+  "sleep and morning habits",
+  "phone and social media as a couple",
+  "secrets and white lies",
+  "who loves whom more",
+  "ex partners",
+  "moods and tantrums",
+  "health and fitness habits",
+  "movies, shows and music together",
+  "embarrassing moments together",
+  "decisions and who is in charge",
+  "first impressions and how you met"
+] as const;
+
 /** A fresh random set of distinct angles for one round. */
-export function sampleAngles(count: number, random: () => number = Math.random): string[] {
-  const pool = [...ANGLES];
+export function sampleAngles(count: number, random: () => number = Math.random, couple = false): string[] {
+  const pool: string[] = [...(couple ? COUPLE_ANGLES : ANGLES)];
   for (let i = pool.length - 1; i > 0; i--) {
     const j = Math.floor(random() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]];

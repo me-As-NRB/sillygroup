@@ -42,6 +42,8 @@ export function Lobby({ state }: { state: GameState }) {
   };
 
   const host = state.players.find((p) => p.id === state.hostId);
+  // More people are needed to start (couple mode needs exactly 2, so only when short).
+  const needsPlayers = online < (state.settings.mode === "couple" ? 2 : state.minPlayers);
 
   return (
     <main className="app">
@@ -71,17 +73,22 @@ export function Lobby({ state }: { state: GameState }) {
       </section>
 
       {isHost ? (
-        <HostSetup state={state} online={online} />
+        <HostSetup state={state} online={online} needsPlayers={needsPlayers} onInvite={invite} />
       ) : (
         <section className="card stack center" aria-live="polite">
           <h2 className="h3">Waiting for {host?.name ?? "the host"} to start…</h2>
           <p className="muted" style={{ margin: 0 }}>
             {themeLabel(state.settings)}
           </p>
-          {online < state.minPlayers && (
-            <p className="muted small" style={{ margin: 0 }}>
-              Need at least {state.minPlayers} players.
-            </p>
+          {needsPlayers && (
+            <>
+              <p className="muted small" style={{ margin: 0 }}>
+                Need at least {state.minPlayers} players.
+              </p>
+              <button className="btn block" onClick={invite}>
+                Share invite link
+              </button>
+            </>
           )}
         </section>
       )}
@@ -90,7 +97,14 @@ export function Lobby({ state }: { state: GameState }) {
   );
 }
 
-function HostSetup({ state, online }: { state: GameState; online: number }) {
+interface HostSetupProps {
+  state: GameState;
+  online: number;
+  needsPlayers: boolean;
+  onInvite(): void;
+}
+
+function HostSetup({ state, online, needsPlayers, onInvite }: HostSetupProps) {
   const { updateSettings, start } = useGameApi();
   const { settings } = state;
   const [search, setSearch] = useState("");
@@ -215,6 +229,11 @@ function HostSetup({ state, online }: { state: GameState; online: number }) {
       >
         {startLabel}
       </button>
+      {needsPlayers && (
+        <button className="btn block" onClick={onInvite}>
+          Share invite link
+        </button>
+      )}
     </section>
   );
 }

@@ -34,6 +34,9 @@ test("three players play a full round", async ({ browser, page: host, contextOpt
   await host.getByRole("button", { name: /Create a room/ }).click();
   const code = (await host.locator(".room-code").textContent())!.trim();
   expect(code).toMatch(/^[A-Z]{4}$/);
+  // Alone in the room: the invite button sits right under the disabled Start button.
+  await expect(host.getByRole("button", { name: /Need 1 more player/ })).toBeDisabled();
+  await expect(host.getByRole("button", { name: "Share invite link" })).toBeVisible();
 
   // Two friends join from the invite link.
   const guests: Page[] = [];
@@ -49,6 +52,7 @@ test("three players play a full round", async ({ browser, page: host, contextOpt
 
   // Host sets up the game; guests see the chosen theme.
   await expect(host.getByText("3 online")).toBeVisible();
+  await expect(host.getByRole("button", { name: "Share invite link" })).toHaveCount(0); // enough players now
   expect(await seriousA11yIssues(host)).toEqual([]);
   await host.getByRole("button", { name: /Trek & Hiking/ }).click();
   await host.getByRole("radio", { name: /Savage/ }).click();

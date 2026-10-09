@@ -74,7 +74,8 @@ const STYLE_RULES = [
   "Style: CRISP. Each question is one short sentence, ideally under 80 characters, no filler words.",
   "Vary the openings; do not start more than two questions with 'Who is most likely to'.",
   "About half must be CONDITIONAL scenarios that set up a situation first: 'If … , who would …?' / 'Agar … , kaun …?'. The rest are direct.",
-  "Every question needs a punchline: a specific, funny or exposing detail, never a vague trait like 'who is the nicest'."
+  "Every question needs a punchline: a specific, funny or exposing detail, never a vague trait like 'who is the nicest'.",
+  "Make it FUN: playful exaggeration and absurd-but-believable situations that make the room laugh out loud. In Savage, the punchline should sting."
 ].join("\n");
 
 const COUPLE_GUIDE = [

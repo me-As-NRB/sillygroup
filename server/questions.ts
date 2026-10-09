@@ -1,4 +1,5 @@
 import type { LanguageId, ModeId, ToneId } from "../shared/types";
+import { sceneQuestions } from "./scenes";
 import { EXTRA_GENRE_BANK, EXTRA_HINGLISH_GENRE_BANK } from "./themeQuestions";
 
 // Backup question bank, used when no AI key is set or the AI call fails.
@@ -660,6 +661,19 @@ export function pickFromBank(count: number, used: readonly string[], options: Ba
     return [...new Set([...lead, ...couple, ...coupleThemed])].slice(0, count);
   }
 
+  if (genres.length) {
+    // A theme was picked: every question stays on it. Handwritten theme questions
+    // alternate with scenario ones ("If the movie flopped, who would…?").
+    const scenarios = genres
+      .flatMap((g) => sceneQuestions(g, tone, language, random))
+      .filter((q) => !usedSet.has(q.toLowerCase()));
+    // Savage rounds lead with the scenarios (spicier); Blunt rounds with handwritten ones.
+    const lead = tone === "savage" ? interleave([scenarios, themed]) : interleave([themed, scenarios]);
+    // Return only on-theme questions, even if fewer than asked for: the caller
+    // asks for spares. Only a theme with no material left falls through.
+    if (lead.length) return [...new Set(lead)].slice(0, count);
+  }
+
   const savage = tone === "savage" ? mix(SAVAGE_HINGLISH_BANK, SAVAGE_BANK) : [];
   let general = mix(HINGLISH_BANK, QUESTION_BANK);
   // Everything has been played in this room; start the cycle again.
@@ -667,7 +681,6 @@ export function pickFromBank(count: number, used: readonly string[], options: Ba
     general = shuffle([...(hinglish ? HINGLISH_BANK : []), ...QUESTION_BANK], random);
   }
 
-  // The chosen theme always leads; in Savage rounds, savage questions fill the gaps.
   const lead = savage.length ? interleave([themed, savage]) : themed;
   return [...new Set([...lead, ...themed, ...general])].slice(0, count);
 }

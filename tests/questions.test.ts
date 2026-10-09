@@ -13,6 +13,18 @@ import {
   pickFromBank
 } from "../server/questions";
 import { EXTRA_GENRE_BANK, EXTRA_HINGLISH_GENRE_BANK } from "../server/themeQuestions";
+import { sceneQuestions } from "../server/scenes";
+
+/** Everything that counts as "on theme" for a genre: handwritten and scenario questions. */
+function themeSet(genre: string): Set<string> {
+  return new Set([
+    ...(GENRE_BANK[genre] ?? []),
+    ...(HINGLISH_GENRE_BANK[genre] ?? []),
+    ...(EXTRA_GENRE_BANK[genre] ?? []),
+    ...(EXTRA_HINGLISH_GENRE_BANK[genre] ?? []),
+    ...(["savage", "blunt"] as const).flatMap((tone) => (["en", "hinglish"] as const).flatMap((l) => sceneQuestions(genre, tone, l)))
+  ]);
+}
 
 const ALL_BANKS = [
   ...QUESTION_BANK,
@@ -54,10 +66,12 @@ describe("pickFromBank", () => {
     expect(new Set(qs).size).toBe(10);
   });
 
-  it("puts questions from the chosen theme first", () => {
-    const qs = pickFromBank(10, [], { genres: ["trek"] });
-    const trek = new Set(GENRE_BANK.trek);
-    expect(qs.slice(0, GENRE_BANK.trek.length).every((q) => trek.has(q))).toBe(true);
+  it("keeps every question on the chosen theme, led by handwritten ones in Blunt", () => {
+    const qs = pickFromBank(10, [], { genres: ["trek"], tone: "blunt", language: "en" });
+    const onTheme = themeSet("trek");
+    expect(qs).toHaveLength(10);
+    expect(qs.every((q) => onTheme.has(q))).toBe(true);
+    expect(GENRE_BANK.trek.includes(qs[0])).toBe(true);
   });
 
   it("mixes about two Hinglish questions for every English one", () => {
@@ -70,10 +84,12 @@ describe("pickFromBank", () => {
     expect(qs.some((q) => hinglish.has(q))).toBe(false);
   });
 
-  it("fills savage rounds with exposing questions, alternating with the theme", () => {
+  it("never mixes general savage questions into a themed round", () => {
     const qs = pickFromBank(10, [], { genres: ["party"], tone: "savage", language: "hinglish" });
-    expect(qs.filter((q) => savage.has(q)).length).toBeGreaterThanOrEqual(5);
-    expect(qs.slice(0, 2).some((q) => !savage.has(q))).toBe(true); // theme still leads
+    expect(qs.every((q) => themeSet("party").has(q))).toBe(true);
+    expect(qs.some((q) => savage.has(q))).toBe(false);
+    // Savage rounds lead with conditional scenarios.
+    expect(qs.filter((q) => /^(If|Agar) /.test(q)).length).toBeGreaterThanOrEqual(5);
   });
 
   it("does not use savage questions in blunt rounds", () => {

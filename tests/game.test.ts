@@ -7,6 +7,7 @@ const AI_ASK = QUESTIONS_PER_ROUND + 6;
 import type { GenerateOptions } from "../server/ai";
 import { COUPLE_GENRE_BANK, GENRE_BANK, HINGLISH_GENRE_BANK } from "../server/questions";
 import { themeTopics, topicsOf } from "../server/variety";
+import { sceneQuestions } from "../server/scenes";
 import type { Tracker } from "../server/stats";
 
 function makeDeps(overrides: Partial<GameDeps> = {}): GameDeps & { tracker: Tracker & { calls: string[] } } {
@@ -332,13 +333,17 @@ describe("question variety", () => {
     expect(texts.filter((q) => trek.includes(q)).length).toBeGreaterThanOrEqual(8);
   });
 
-  it.each(["hinglish", "en"] as const)("leads a built-in %s round with the theme's questions", async (language) => {
+  it.each(["hinglish", "en"] as const)("keeps built-in %s rounds on the theme to the last question", async (language) => {
     const { room, ids } = setup(3);
     room.updateSettings(ids[0], { genres: ["trek"], language });
-    const texts = await playRound(room, ids);
-    const themed = new Set([...GENRE_BANK.trek, ...HINGLISH_GENRE_BANK.trek]);
-    expect(texts.filter((q) => themed.has(q)).length).toBeGreaterThanOrEqual(4);
-    expect(themed.has(texts[0])).toBe(true);
+    const handwritten = new Set([...GENRE_BANK.trek, ...HINGLISH_GENRE_BANK.trek]);
+    const scenarios = new Set((["en", "hinglish"] as const).flatMap((l) => sceneQuestions("trek", "savage", l)));
+    // Three rounds in a row, every single question is about the trek.
+    for (let round = 0; round < 3; round++) {
+      const texts = await playRound(room, ids);
+      expect(texts).toHaveLength(QUESTIONS_PER_ROUND);
+      expect(texts.filter((q) => !handwritten.has(q) && !scenarios.has(q))).toEqual([]);
+    }
   });
 
   it("uses couple versions of the theme in couple mode, never friends' theme questions", async () => {

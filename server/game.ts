@@ -327,7 +327,8 @@ export class Room {
     // refuses the same scene, wording or punchline twice within this round.
     const topUp = (avoid: readonly string[], checkTopics: boolean) => {
       if (questions.length >= QUESTIONS_PER_ROUND) return;
-      const candidates = pickFromBank(200, [...this.used, ...questions], bank);
+      // Never an exact repeat of anything this host has seen, in any room.
+      const candidates = pickFromBank(200, [...seen, ...questions], bank);
       questions = [...questions, ...pickDiverse(candidates, avoid, QUESTIONS_PER_ROUND - questions.length, questions, exempt, checkTopics)];
     };
     topUp(seen, true); // 1. nothing like anything played before, one question per topic

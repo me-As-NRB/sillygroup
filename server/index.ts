@@ -1,4 +1,4 @@
-import { aiEnabled, aiProvider, generateQuestions } from "./ai";
+import { aiEnabled, aiProviders, generateQuestions } from "./ai";
 import { createGameServer } from "./app";
 import { DEFAULT_TIMINGS, HostHistory } from "./game";
 import { createStats } from "./stats";
@@ -28,5 +28,5 @@ const server = createGameServer({
 });
 
 server.httpServer.listen(PORT, () => {
-  console.log(`Game running on http://localhost:${PORT} (AI questions: ${aiProvider ?? "off, using built-in list"})`);
+  console.log(`Game running on http://localhost:${PORT} (AI questions: ${aiProviders.join(" → ") || "off, using built-in list"})`);
 });

@@ -21,7 +21,8 @@ beforeAll(async () => {
       aiEnabled: false,
       tracker: stats,
       timings: { ...DEFAULT_TIMINGS, revealMs: 50 },
-      now: Date.now
+      now: Date.now,
+      log: () => {}
     },
     stats,
     clientDir: "does-not-exist",

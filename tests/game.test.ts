@@ -16,6 +16,7 @@ function makeDeps(overrides: Partial<GameDeps> = {}): GameDeps & { tracker: Trac
     aiEnabled: false,
     timings: DEFAULT_TIMINGS,
     now: () => Date.now(),
+    log: () => {},
     ...overrides,
     tracker
   };
@@ -192,6 +193,49 @@ describe("a full round", () => {
     );
     expect(room.stateFor(ids[0]).question!.text).toBe("Who would win a staring contest?");
     expect(room.stateFor(ids[0]).question!.total).toBe(10);
+  });
+});
+
+describe("game log", () => {
+  it("records joins, every vote, each answer with points, and the final scores", async () => {
+    const lines: string[] = [];
+    const { room, ids } = setup(3, makeDeps({ log: (l) => lines.push(l) }));
+    room.updateSettings(ids[0], { genres: ["trek"], tone: "savage", context: "Manali boys" });
+    await startAndWait(room, ids[0]);
+    const firstQuestion = room.stateFor(ids[0]).question!.text;
+
+    vi.advanceTimersByTime(1200);
+    room.vote(ids[0], ids[1]);
+    room.vote(ids[2], ids[1]);
+    room.vote(ids[1], ids[0]);
+    for (let i = 1; i < 10; i++) {
+      vi.advanceTimersByTime(DEFAULT_TIMINGS.revealMs);
+      for (const id of ids) room.vote(id, ids[0]);
+    }
+    vi.advanceTimersByTime(DEFAULT_TIMINGS.revealMs); // last results screen → final
+
+    const log = lines.join("\n");
+    expect(lines[0]).toBe("[TEST] 🏠 Room created by Player 1");
+    expect(log).toContain("[TEST] 🙋 Player 3 joined (3 players)");
+    expect(log).toContain("▶️ Round 1 started · theme: Trek & Hiking · tone: savage · language: hinglish");
+    expect(log).toContain('group description: "Manali boys"');
+    expect(log).toContain(`❓ Q1/10: ${firstQuestion}`);
+    expect(log).toContain("🗳️ Player 1 → Player 2 (1.2s)");
+    expect(log).toContain("✅ Q1 answer: Player 2 (2/3 votes) · points: Player 1 +1000, Player 3 +850");
+    expect(lines.at(-1)).toMatch(/^\[TEST\] 🏆 Round 1 finished · Player 1 \d+, /);
+  });
+
+  it("records disconnects, reconnects and leaving", () => {
+    const lines: string[] = [];
+    const { room, ids } = setup(2, makeDeps({ log: (l) => lines.push(l) }));
+    room.disconnect(ids[1]);
+    room.connect(ids[1]);
+    room.removePlayer(ids[1]);
+    expect(lines.slice(-3)).toEqual([
+      "[TEST] 📴 Player 2 disconnected",
+      "[TEST] 🔌 Player 2 reconnected",
+      "[TEST] 👋 Player 2 left (1 players)"
+    ]);
   });
 });
 

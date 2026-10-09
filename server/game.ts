@@ -52,6 +52,8 @@ export interface GameDeps {
   tracker: Tracker;
   timings: Timings;
   now: () => number;
+  /** Receives one human-readable line per game event (joins, votes, results). */
+  log: (line: string) => void;
 }
 
 interface Player {
@@ -60,6 +62,8 @@ interface Player {
   name: string;
   score: number;
   connected: boolean;
+  /** Has been online at least once, so a later connect is a reconnect. */
+  seen?: boolean;
   dropTimer?: ReturnType<typeof setTimeout>;
 }
 
@@ -103,6 +107,14 @@ export class Room {
     private readonly onEmpty: (room: Room) => void
   ) {}
 
+  private log(message: string): void {
+    this.deps.log(`[${this.code}] ${message}`);
+  }
+
+  private nameOf(id: string): string {
+    return this.players.get(id)?.name ?? this.current?.options.find((o) => o.id === id)?.name ?? "?";
+  }
+
   // ---------- players ----------
 
   connectedPlayers(): Player[] {
@@ -124,6 +136,8 @@ export class Room {
     const player: Player = { id: randomUUID(), token: randomUUID(), name, score: 0, connected: false };
     this.players.set(player.id, player);
     this.deps.tracker.track("players_joined");
+    if (this.players.size === 1 && this.rounds === 0) this.log(`🏠 Room created by ${name}`);
+    else this.log(`🙋 ${name} joined (${this.players.size} players)`);
     return { ok: true, player };
   }
 
@@ -132,6 +146,8 @@ export class Room {
     const player = this.players.get(playerId);
     if (!player) return;
     clearTimeout(player.dropTimer);
+    if (player.seen && !player.connected) this.log(`🔌 ${player.name} reconnected`);
+    player.seen = true;
     player.connected = true;
     this.emptySince = null;
     this.hostId ??= player.id;
@@ -143,6 +159,7 @@ export class Room {
     const player = this.players.get(playerId);
     if (!player) return;
     player.connected = false;
+    this.log(`📴 ${player.name} disconnected`);
 
     const { lobbyDropMs, gameDropMs, hostGraceMs } = this.deps.timings;
     player.dropTimer = setTimeout(
@@ -170,11 +187,13 @@ export class Room {
     clearTimeout(player.dropTimer);
     this.players.delete(playerId);
     this.current?.votes.delete(playerId);
+    this.log(`👋 ${player.name} left (${this.players.size} players)`);
     if (this.hostId === playerId) {
       this.hostId = null;
       this.ensureHost();
     }
     if (this.players.size === 0) {
+      this.log("🚪 Room closed (everyone left)");
       this.dispose();
       this.onEmpty(this);
       return;
@@ -225,7 +244,9 @@ export class Room {
     const q = this.current;
     if (q.votes.has(voterId)) return;
     if (!q.options.some((o) => o.id === targetId)) return;
-    q.votes.set(voterId, { targetId: targetId as string, at: this.deps.now() });
+    const at = this.deps.now();
+    q.votes.set(voterId, { targetId: targetId as string, at });
+    this.log(`🗳️ ${this.nameOf(voterId)} → ${this.nameOf(targetId as string)} (${((at - q.startedAt) / 1000).toFixed(1)}s)`);
     this.onChange(this);
     this.maybeEndQuestion();
   }
@@ -261,6 +282,20 @@ export class Room {
     if (seq !== this.roundSeq || this.players.size === 0) return;
 
     tracker.track(questions.length >= QUESTIONS_PER_ROUND / 2 ? "rounds_ai" : "rounds_backup");
+    const fromAi = questions.length;
+    this.log(
+      [
+        `▶️ Round ${this.rounds} started`,
+        `theme: ${genres.map((id) => genreById.get(id)?.label ?? id).join(", ") || "Random Mix"}`,
+        `tone: ${tone}`,
+        `language: ${language}`,
+        `players: ${this.connectedPlayers().map((p) => p.name).join(", ")}`,
+        `questions: ${fromAi ? `${fromAi} AI` : "built-in"}`,
+        context ? `group description: "${context}"` : ""
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    );
     if (questions.length < QUESTIONS_PER_ROUND) {
       const topUp = pickFromBank(QUESTIONS_PER_ROUND - questions.length, [...this.used, ...questions], { genres, tone, language });
       questions = [...questions, ...topUp];
@@ -287,6 +322,7 @@ export class Room {
     };
     this.phase = "question";
     this.reveal = null;
+    this.log(`❓ Q${this.qIndex + 1}/${this.questions.length}: ${this.current.text}`);
     // Small grace so a vote sent at 0.0s on a slow phone still counts.
     this.timer = setTimeout(() => this.endQuestion(), durationMs + 300);
     this.onChange(this);
@@ -326,6 +362,16 @@ export class Room {
       topVotes: tally.topVotes,
       totalVotes: q.votes.size
     });
+    this.log(
+      [
+        `✅ Q${this.qIndex + 1} answer: ${tally.winners.map(nameOf).join(" & ") || "nobody (no votes)"}`,
+        tally.winners.length ? `(${tally.topVotes}/${q.votes.size} votes)` : "",
+        awards.length ? `· points: ${awards.map((a) => `${a.name} +${a.points}`).join(", ")}` : "",
+        this.reveal.noVote.length ? `· no vote: ${this.reveal.noVote.map((p) => p.name).join(", ")}` : ""
+      ]
+        .filter(Boolean)
+        .join(" ")
+    );
     this.phase = "reveal";
     this.timer = setTimeout(() => this.nextQuestion(), this.deps.timings.revealMs);
     this.onChange(this);
@@ -344,6 +390,7 @@ export class Room {
     };
     this.deps.tracker.track("rounds_finished");
     this.deps.tracker.track("players_in_finished_rounds", this.players.size);
+    this.log(`🏆 Round ${this.rounds} finished · ${this.final.leaderboard.map((p) => `${p.name} ${p.score}`).join(", ")}`);
     this.onChange(this);
   }
 

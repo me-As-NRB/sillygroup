@@ -1,7 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QUESTIONS_PER_ROUND } from "../shared/rules";
 import { DEFAULT_TIMINGS, HostHistory, Room, RoomManager, type GameDeps } from "../server/game";
+
+/** The game asks the AI for this many, then keeps the most varied QUESTIONS_PER_ROUND. */
+const AI_ASK = QUESTIONS_PER_ROUND + 6;
 import type { GenerateOptions } from "../server/ai";
+import { COUPLE_GENRE_BANK, GENRE_BANK } from "../server/questions";
+import { topicsOf } from "../server/variety";
 import type { Tracker } from "../server/stats";
 
 function makeDeps(overrides: Partial<GameDeps> = {}): GameDeps & { tracker: Tracker & { calls: string[] } } {
@@ -135,21 +140,21 @@ describe("couple mode", () => {
 
     const call = generateQuestions.mock.calls[0][0];
     expect(call.mode).toBe("couple");
-    expect(call.angles).toHaveLength(14);
+    expect(call.angles).toHaveLength(AI_ASK);
 
     for (let i = 0; i < QUESTIONS_PER_ROUND; i++) {
       // Agree on the first 7 questions, disagree on the last 3.
       room.vote(ids[0], ids[1]);
-      room.vote(ids[1], i < 7 ? ids[1] : ids[0]);
+      room.vote(ids[1], i < 7 ? ids[1] : ids[0]); // agree on the first 7
       vi.advanceTimersByTime(DEFAULT_TIMINGS.revealMs);
     }
     const final = room.stateFor(ids[0]).final!;
-    expect(final).toMatchObject({ mode: "couple", matches: 7, totalQuestions: 10 });
+    expect(final).toMatchObject({ mode: "couple", matches: 7, totalQuestions: QUESTIONS_PER_ROUND });
   });
 });
 
 describe("a full round", () => {
-  it("scores the majority pick by speed and finishes after 10 questions", async () => {
+  it("scores the majority pick by speed and finishes after a full round", async () => {
     const { room, ids, deps } = setup(3);
     const [a, b, c] = ids;
     await startAndWait(room, a);
@@ -182,7 +187,7 @@ describe("a full round", () => {
     expect(seen.size).toBe(QUESTIONS_PER_ROUND);
     expect(room.phase).toBe("final");
     const final = room.stateFor(a).final!;
-    expect(final.leaderboard.map((p) => p.score)).toEqual([10_000, 8_500, 0]);
+    expect(final.leaderboard.map((p) => p.score)).toEqual([1000 * QUESTIONS_PER_ROUND, 850 * QUESTIONS_PER_ROUND, 0]);
     expect(final.highlights).toHaveLength(2);
     expect(final.highlights[0]).toMatchObject({ winners: ["Player 2"], topVotes: 2, totalVotes: 3 });
     expect(deps.tracker.calls).toEqual(
@@ -224,7 +229,7 @@ describe("a full round", () => {
 
     expect(generateQuestions).toHaveBeenCalledWith(
       expect.objectContaining({
-        count: 14, // a few extra, so the most varied ten can be kept
+        count: AI_ASK, // extras, so the most varied ones can be kept
         genres: ["Trek & Hiking"],
         tone: "friendly",
         language: "hinglish",
@@ -233,7 +238,7 @@ describe("a full round", () => {
       })
     );
     expect(room.stateFor(ids[0]).question!.text).toBe("Who would win a staring contest?");
-    expect(room.stateFor(ids[0]).question!.total).toBe(10);
+    expect(room.stateFor(ids[0]).question!.total).toBe(QUESTIONS_PER_ROUND);
   });
 });
 
@@ -249,7 +254,7 @@ describe("question variety", () => {
     return texts;
   }
 
-  it("asks the AI for 14 questions on 14 different life areas, avoiding everything played", async () => {
+  it("asks the AI for extra questions, each on a different life area, avoiding everything played", async () => {
     const generateQuestions = vi.fn<(opts: GenerateOptions) => Promise<string[]>>(async () => []);
     const { room, ids } = setup(3, makeDeps({ generateQuestions }));
     const round1 = await playRound(room, ids);
@@ -259,8 +264,8 @@ describe("question variety", () => {
     await startAndWait(room, ids[0]);
 
     const second = generateQuestions.mock.calls[1][0];
-    expect(second.count).toBe(14);
-    expect(new Set(second.angles).size).toBe(14);
+    expect(second.count).toBe(AI_ASK);
+    expect(new Set(second.angles).size).toBe(AI_ASK);
     expect(second.genres).toEqual(["House Party"]);
     expect(second.avoid).toEqual(expect.arrayContaining(round1));
   });
@@ -280,6 +285,39 @@ describe("question variety", () => {
 
     await startAndWait(room, ids[0]);
     expect(room.stateFor(ids[0]).question!.text).toBe("Who would start a dance-off on the summit?");
+  });
+
+  it.each([
+    { mode: "friends", tone: "savage", language: "hinglish", genres: ["trek"] },
+    { mode: "friends", tone: "blunt", language: "en", genres: [] },
+    { mode: "couple", tone: "savage", language: "hinglish", genres: ["trip"] },
+    { mode: "couple", tone: "friendly", language: "en", genres: [] }
+  ] as const)("keeps every round on distinct topics for 3 rounds: $mode/$tone/$language", async (cfg) => {
+    const { room, ids } = setup(2);
+    room.updateSettings(ids[0], { ...cfg, genres: [...cfg.genres] });
+    for (let round = 0; round < 3; round++) {
+      const texts = await playRound(room, ids);
+      expect(texts).toHaveLength(QUESTIONS_PER_ROUND);
+      const topics = texts.flatMap(topicsOf);
+      expect(new Set(topics).size).toBe(topics.length);
+    }
+  });
+
+  it("uses couple versions of the theme in couple mode, never friends' theme questions", async () => {
+    const { room, ids } = setup(2);
+    room.updateSettings(ids[0], { mode: "couple", genres: ["trek"], language: "en" });
+    const texts = await playRound(room, ids);
+    expect(texts.some((q) => GENRE_BANK.trek.includes(q))).toBe(false);
+    expect(texts.some((q) => COUPLE_GENRE_BANK.trek.includes(q))).toBe(true);
+    expect(texts.some((q) => /\bgroup\b/i.test(q))).toBe(false);
+  });
+
+  it("drops AI questions addressed to a group in couple mode", async () => {
+    const generateQuestions = vi.fn(async () => ["Who in the group is the loudest?", "Who between you two snores louder?"]);
+    const { room, ids } = setup(2, makeDeps({ generateQuestions }));
+    room.updateSettings(ids[0], { mode: "couple" });
+    await startAndWait(room, ids[0]);
+    expect(room.stateFor(ids[0]).question!.text).toBe("Who between you two snores louder?");
   });
 
   it("never shows the same host a question again in a new room", async () => {
@@ -314,7 +352,7 @@ describe("game log", () => {
     room.vote(ids[0], ids[1]);
     room.vote(ids[2], ids[1]);
     room.vote(ids[1], ids[0]);
-    for (let i = 1; i < 10; i++) {
+    for (let i = 1; i < QUESTIONS_PER_ROUND; i++) {
       vi.advanceTimersByTime(DEFAULT_TIMINGS.revealMs);
       for (const id of ids) room.vote(id, ids[0]);
     }
@@ -325,7 +363,7 @@ describe("game log", () => {
     expect(log).toContain("[TEST] 🙋 Player 3 joined (3 players)");
     expect(log).toContain("▶️ Round 1 started · theme: Trek & Hiking · tone: savage · language: hinglish");
     expect(log).toContain('group description: "Manali boys"');
-    expect(log).toContain(`❓ Q1/10: ${firstQuestion}`);
+    expect(log).toContain(`❓ Q1/${QUESTIONS_PER_ROUND}: ${firstQuestion}`);
     expect(log).toContain("🗳️ Player 1 → Player 2 (1.2s)");
     expect(log).toContain("✅ Q1 answer: Player 2 (2/3 votes) · points: Player 1 +1000, Player 3 +850");
     expect(lines.at(-1)).toMatch(/^\[TEST\] 🏆 Round 1 finished · Player 1 \d+, /);

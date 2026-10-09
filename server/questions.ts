@@ -442,7 +442,35 @@ export const COUPLE_BANK: readonly string[] = [
   "Who falls asleep first during a movie night?",
   "Who makes the big decisions in this relationship?",
   "Who is more likely to remember small details about the first date?",
-  "Who would survive longer without their phone?"
+  "Who would survive longer without their phone?",
+  "Who fell for the other first?",
+  "Who is more likely to plan your next date night?",
+  "Who wins most of your arguments?",
+  "Who is more likely to forget what you fought about yesterday?",
+  "Who would be the stricter parent?",
+  "Who leaves more dishes in the sink when you live together?",
+  "Who is more likely to cry at your wedding?",
+  "Who takes more photos of the two of you?",
+  "Who would plan the honeymoon?",
+  "Who gives in first when you both want different movies?",
+  "Who is more likely to say 'I'm fine' when they're clearly not?",
+  "Who hogs the bed when you share it on holiday?",
+  "Who is more likely to secretly re-read your old chats?",
+  "Who would remember the date of your first kiss?",
+  "Who misses the other more when you're apart?",
+  "Who is more likely to change plans for the other?",
+  "Who would adopt a pet without asking the other first?",
+  "Who drives when you go out together?",
+  "Who is the sorer loser when you play games together?",
+  "Who would keep your plants alive if you lived together?",
+  "Who decides how your home is decorated?",
+  "Who is the bigger neat freak of the two of you?",
+  "Who would rather stay in on a Saturday night together?",
+  "Who gives the better hugs?",
+  "Who is more likely to sing badly to the other?",
+  "Who is the better listener in this relationship?",
+  "Who would win a quiz about the other's life?",
+  "Who holds hands more in public?"
 ];
 
 export const COUPLE_HINGLISH_BANK: readonly string[] = [
@@ -465,8 +493,88 @@ export const COUPLE_HINGLISH_BANK: readonly string[] = [
   "Kaun selfie mein sabse zyada retakes karwata hai?",
   "Kaun relationship ka asli boss hai?",
   "Kaun 'main naraz nahi hoon' bolke sabse zyada naraz hota hai?",
-  "Kaun pehle shaadi ki baat chhedta hai?"
+  "Kaun pehle shaadi ki baat chhedta hai?",
+  "Kaun pehle pyaar mein pada tha?",
+  "Kaun 'tumhari yaad aa rahi hai' zyada bolta hai?",
+  "Kaun date ka plan banake khud hi bhool jaata hai?",
+  "Kaun movie choose karne mein hamesha jeet jaata hai?",
+  "Kaun rooth ke manaane ka wait karta hai?",
+  "Kaun dusre ke liye sabse zyada adjust karta hai?",
+  "Kaun anniversary pe zyada filmy surprise dega?",
+  "Kaun shaadi ke baad zyada badal jaayega?",
+  "Kaun hamesha 'tum hi bata do' bolta hai?",
+  "Kaun pehli date ki baatein zyada yaad rakhta hai?",
+  "Kaun ladai mein pehle hasne lagta hai?",
+  "Kaun dusre ki family ke saamne zyada sanskari banta hai?",
+  "Kaun 'bas 5 minute aur' bolke call nahi rakhta?"
 ];
+
+// Couple versions of popular themes: the theme is something the two do together.
+export const COUPLE_GENRE_BANK: Readonly<Record<string, readonly string[]>> = {
+  trip: [
+    "Who would overpack for your trip together?",
+    "Who would pick the hotel on your next holiday?",
+    "Who would sulk first if your flight got delayed?"
+  ],
+  trek: [
+    "Who would ask to turn back first on a trek together?",
+    "Who would carry both bags on your trek?",
+    "Who would stop for a couple selfie at every turn of the trail?"
+  ],
+  roadtrip: ["Who controls the music on your road trips?", "Who would get you lost on a drive together?"],
+  beach: ["Who would plan a sunset date on the beach?", "Who would get sunburnt first on your beach holiday?"],
+  party: [
+    "Who drags the other to the dance floor at parties?",
+    "Who gets jealous first when the other is chatting with someone at a party?"
+  ],
+  birthday: [
+    "Who plans the better birthday surprise for the other?",
+    "Who would forget to wish on time at midnight?"
+  ],
+  wedding: [
+    "Who would dance harder at your own wedding?",
+    "Who would want the bigger wedding?",
+    "Who would cry first during the pheras?"
+  ],
+  festivals: ["Who goes all out on Valentine's Day?", "Who would buy the matching outfits for Diwali?"],
+  movies: ["Who picks the movie on your date nights?", "Who falls asleep first during your movie dates?"],
+  bollywood: [
+    "Who would recreate a Shah Rukh Khan scene for the other?",
+    "Who thinks your love story is a Bollywood film?"
+  ],
+  food: [
+    "Who always steals food from the other's plate?",
+    "Who decides where you eat on date night?"
+  ],
+  cooking: ["Who would cook a romantic dinner for the other?", "Who burns the food when you cook together?"],
+  shopping: ["Who carries the bags when you shop together?", "Who spends more when you go shopping together?"],
+  dating: [
+    "Who made the first move?",
+    "Who planned your best date so far?",
+    "Who was more nervous on your first date?"
+  ],
+  family: [
+    "Who is more scared of the other's parents?",
+    "Who would win over the in-laws faster?"
+  ],
+  socialmedia: [
+    "Who wanted to make your relationship 'Instagram official' first?",
+    "Who checks who liked the other's photos?"
+  ]
+};
+
+export const COUPLE_HINGLISH_GENRE_BANK: Readonly<Record<string, readonly string[]>> = {
+  trip: ["Trip pe saath mein kaun zyada saamaan le jaayega?", "Kaun trip pe har jagah couple photo ki zid karega?"],
+  trek: ["Trek pe kaun pehle bolega 'baby, ab aur nahi chal sakte'?", "Kaun trek pe dono ke bag uthayega?"],
+  party: ["Party mein kaun dusre ko dance floor pe kheench ke le jaata hai?"],
+  wedding: ["Apni shaadi mein kaun zyada naachega?", "Pheron mein pehle kaun royega?"],
+  festivals: ["Valentine's Day pe kaun zyada filmy ho jaata hai?", "Karva Chauth pe kaun zyada natak karega?"],
+  food: ["Kaun hamesha dusre ki plate se khaata hai?", "Date pe khaana kahan khayenge, ye kaun decide karta hai?"],
+  dating: ["Pehla move kisne kiya tha?", "Pehli date pe kaun zyada nervous tha?"],
+  family: ["Kaun dusre ke mummy-papa se zyada darta hai?", "Kaun sasural mein jaldi favourite ban jaayega?"],
+  movies: ["Movie date pe kaun pehle so jaata hai?", "Kaun romantic movie mein dusre ka haath pakad ke rota hai?"],
+  shopping: ["Shopping pe saath jaate waqt bags kaun uthata hai?"]
+};
 
 export const COUPLE_SAVAGE_BANK: readonly string[] = [
   "Who still checks their ex's profile sometimes?",
@@ -536,15 +644,19 @@ export function pickFromBank(count: number, used: readonly string[], options: Ba
   );
 
   if (mode === "couple") {
-    // Group questions ("who in this group…") don't fit two partners; use couple ones.
-    const isHinglish = (q: string) => COUPLE_HINGLISH_BANK.includes(q) || /\b(kaun|kiske|kiska|kiski)\b/i.test(q);
+    // Friends' questions ("who in this group…") don't fit two partners: couple banks only.
+    const isHinglish = (q: string) => /\b(kaun|kiske|kiska|kiski|kisne)\b/i.test(q);
+    const coupleThemed = mix(
+      genres.flatMap((g) => COUPLE_HINGLISH_GENRE_BANK[g] ?? []),
+      genres.flatMap((g) => COUPLE_GENRE_BANK[g] ?? [])
+    );
     const spicy = tone === "savage" ? fresh(COUPLE_SAVAGE_BANK).filter((q) => hinglish || !isHinglish(q)) : [];
     let couple = mix(COUPLE_HINGLISH_BANK, COUPLE_BANK);
-    if (new Set([...themed, ...spicy, ...couple]).size < count) {
+    if (new Set([...coupleThemed, ...spicy, ...couple]).size < count) {
       couple = shuffle([...(hinglish ? COUPLE_HINGLISH_BANK : []), ...COUPLE_BANK], random);
     }
-    const lead = interleave([themed.slice(0, 3), spicy.length ? spicy : couple]);
-    return [...new Set([...lead, ...couple, ...themed])].slice(0, count);
+    const lead = interleave([coupleThemed.slice(0, 4), spicy.length ? spicy : couple]);
+    return [...new Set([...lead, ...couple, ...coupleThemed])].slice(0, count);
   }
 
   const savage = tone === "savage" ? mix(SAVAGE_HINGLISH_BANK, SAVAGE_BANK) : [];

@@ -3,6 +3,7 @@ import type { AddressInfo } from "node:net";
 import { io as connect, type Socket } from "socket.io-client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { ClientToServerEvents, GameState, JoinRequest, JoinResponse, ServerToClientEvents } from "../shared/types";
+import { QUESTIONS_PER_ROUND } from "../shared/rules";
 import { createGameServer, rateLimiter, type GameServer } from "../server/app";
 import { DEFAULT_TIMINGS, HostHistory } from "../server/game";
 import { createStats } from "../server/stats";
@@ -83,7 +84,7 @@ describe("game server over sockets", () => {
     await host.waitFor((s) => s.players.length === 3);
     host.socket.emit("start");
 
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < QUESTIONS_PER_ROUND; i++) {
       const s = await host.waitFor((x) => x.phase === "question" && x.question?.index === i);
       const target = s.question!.options[1].id;
       for (const b of [host, p2, p3]) b.socket.emit("vote", { targetId: target });

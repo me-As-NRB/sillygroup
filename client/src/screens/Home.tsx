@@ -82,27 +82,26 @@ export function Home() {
   );
 
   return (
-    <main className="app">
-      <div className="logo">
+    <main className="app home">
+      <section className="hero-copy">
+        <p className="eyebrow">Party game · 2–20 players · no app needed</p>
         <h1>
           Who In The <span className="grad-text">Room</span>
         </h1>
-        <p>Cheeky questions about your group. Guess who the majority picks — the fastest right guess scores the most.</p>
-      </div>
+        <p className="lede">
+          AI writes cheeky questions about <em>your</em> group. Everyone secretly votes for who fits best. Match the
+          majority, fastest, to win.
+        </p>
+        <ul className="perks">
+          <li>Questions in Hinglish or English, from friendly to savage</li>
+          <li>Pick a theme: trips, office, college, weddings and 45 more</li>
+          <li>Couple mode for two: how well do you know each other?</li>
+        </ul>
+      </section>
 
-      <ul className="how" aria-label="How it works">
-        <li>
-          <b aria-hidden="true">1</b>Everyone joins with their name
-        </li>
-        <li>
-          <b aria-hidden="true">2</b>Vote who fits the question
-        </li>
-        <li>
-          <b aria-hidden="true">3</b>Match the majority, fast
-        </li>
-      </ul>
+      <HeroPreview />
 
-      <form className="card stack" onSubmit={onSubmit}>
+      <form className="card stack join-card" onSubmit={onSubmit}>
         <label htmlFor="name">Your name</label>
         <input
           id="name"
@@ -136,8 +135,58 @@ export function Home() {
           </>
         )}
       </form>
-      <p className="muted small center">2–20 players · works on phones and laptops</p>
+
+      <ol className="steps" aria-label="How it works">
+        <li>
+          <b>Create a room</b>
+          <span>Share the link or 4-letter code on WhatsApp.</span>
+        </li>
+        <li>
+          <b>Vote in secret</b>
+          <span>"Who's most likely to…?" Pick one of your friends.</span>
+        </li>
+        <li>
+          <b>See who picked whom</b>
+          <span>Fastest right guess scores the most. 12 questions a round.</span>
+        </li>
+      </ol>
       <About />
     </main>
+  );
+}
+
+const PREVIEW_VOTES = [
+  { name: "Rohan", votes: 3, color: "#6d4aff" },
+  { name: "Sneha", votes: 1, color: "#0b7a50" },
+  { name: "Aman", votes: 0, color: "#b45309" }
+];
+
+/** A static mock of a results card, so first-time visitors see what the game looks like. */
+function HeroPreview() {
+  return (
+    <div className="hero-preview" aria-hidden="true">
+      <div className="preview-card">
+        <div className="preview-top">
+          <span>Question 3/12</span>
+          <span>Trek & Hiking</span>
+        </div>
+        <p className="preview-q">Who's most likely to forget their bag halfway up a trek?</p>
+        <ul>
+          {PREVIEW_VOTES.map((p) => (
+            <li key={p.name} className={p.votes === 3 ? "top" : ""}>
+              <span className="avatar sm" style={{ background: p.color }}>
+                {p.name[0]}
+              </span>
+              <span className="pname">{p.name}</span>
+              <span className="pbar">
+                <i style={{ width: `${(p.votes / 4) * 100}%`, background: p.color }} />
+              </span>
+              <span className="pcount">{p.votes}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="preview-foot">The group says Rohan · Priya +1000</p>
+      </div>
+    </div>
   );
 }

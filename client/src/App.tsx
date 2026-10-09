@@ -33,6 +33,13 @@ export function App() {
     };
   }, []);
 
+  // Couple mode switches every player's screen to the romantic palette.
+  const couple = game.state?.settings.mode === "couple";
+  useEffect(() => {
+    if (couple) document.documentElement.dataset.mode = "couple";
+    else delete document.documentElement.dataset.mode;
+  }, [couple]);
+
   // Scroll to the top whenever the screen changes.
   const screenKey = screenKeyOf(game.state);
   useEffect(() => {

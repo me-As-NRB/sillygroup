@@ -12,9 +12,9 @@ has 10 questions, and questions never repeat within a room.
   the tone (Friendly / Blunt / Savage). AI writes questions to match.
 - After each question everyone sees who voted for whom.
 - **Couple mode** (2 players): questions about the relationship; you score only when you both
-  pick the same partner, and the round ends with "You matched on X of 10".
+  pick the same partner, the screen turns romantic, and the round ends with "You matched on X of 12".
 - Hinglish (default) or English; questions spread across different life areas each round and
-  never repeat, even reworded, for the same host.
+  never repeat, even reworded, for the same host; 12 questions per round, each on a different topic.
 - Players only type their name and join by link or 4-letter code. Refreshing the page
   rejoins the same game.
 - Shareable result card after each round, WhatsApp/Instagram link previews, sound effects

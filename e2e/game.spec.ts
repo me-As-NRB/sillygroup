@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Browser, type Page } from "@playwright/test";
+import { QUESTIONS_PER_ROUND as N } from "../shared/rules";
 
 async function seriousA11yIssues(page: Page) {
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
@@ -56,9 +57,9 @@ test("three players play a full round", async ({ browser, page: host, contextOpt
   await expect(guests[0].getByText(/Trek & Hiking.*Savage.*Hinglish/)).toBeVisible();
   await host.getByRole("button", { name: /Start game/ }).click();
 
-  for (let i = 1; i <= 10; i++) {
+  for (let i = 1; i <= N; i++) {
     for (const p of players) {
-      await expect(p.getByText(`Question ${i}/10`)).toBeVisible({ timeout: 15_000 });
+      await expect(p.getByText(`Question ${i}/${N}`)).toBeVisible({ timeout: 15_000 });
     }
     if (i === 1) expect(await seriousA11yIssues(host)).toEqual([]);
     // Everyone picks the guest Gita, so she is the unanimous answer.
@@ -99,17 +100,20 @@ test("a couple plays a full round and sees how often they matched", async ({ bro
 
   await host.getByRole("radio", { name: /Couple/ }).click();
   await host.getByRole("radio", { name: "30s" }).click();
-  await expect(partner.getByText(/Couple mode/)).toBeVisible();
+  await expect(partner.getByText(/Couple mode/).first()).toBeVisible();
+  // Both screens switch to the romantic palette, and it stays readable.
+  for (const p of [host, partner]) await expect(p.locator("html")).toHaveAttribute("data-mode", "couple");
+  expect(await seriousA11yIssues(host)).toEqual([]);
   await host.getByRole("button", { name: /Start game/ }).click();
 
-  for (let i = 1; i <= 10; i++) {
-    for (const p of [host, partner]) await expect(p.getByText(`Question ${i}/10`)).toBeVisible({ timeout: 15_000 });
+  for (let i = 1; i <= N; i++) {
+    for (const p of [host, partner]) await expect(p.getByText(`Question ${i}/${N}`)).toBeVisible({ timeout: 15_000 });
     // Both always pick Riya, so every question is a match.
     await host.getByRole("group", { name: "Pick a player" }).getByRole("button", { name: /Riya/ }).click();
     await partner.getByRole("group", { name: "Pick a player" }).getByRole("button", { name: /Riya/ }).click();
     await expect(host.getByText("You both picked")).toBeVisible();
   }
-  await expect(host.getByRole("heading", { name: "You matched on 10 of 10" })).toBeVisible({ timeout: 15_000 });
+  await expect(host.getByRole("heading", { name: `You matched on ${N} of ${N}` })).toBeVisible({ timeout: 15_000 });
   await expect(partner.getByText("Made for each other.")).toBeVisible();
 });
 

@@ -115,13 +115,50 @@ export function tooSimilar(a: string, b: string, threshold = 0.6): boolean {
   return shared >= 2 && shared / Math.min(wa.size, wb.size) >= threshold;
 }
 
-/** Keeps candidates in order, dropping any too similar to `avoid` or to ones already kept. */
-export function pickDiverse(candidates: readonly string[], avoid: readonly string[], count: number): string[] {
+// Everyday situations a question can be "about". Two questions sharing one feel
+// repetitive even with different wording, so a round uses each at most once.
+const TOPICS: readonly [string, RegExp][] = [
+  ["lateness", /\b(late|punctual|minutes? away|5 minute|der se|time pe)\b/i],
+  ["crying", /\b(cry|cries|crying|ro(ta|ti|ega|yega|ye)|rone|emotional|tears)\b/i],
+  ["phone", /\b(phone|reels?|selfies?|instagram|social media|stor(y|ies)|post(s|ing)?|scroll|whatsapp|chats?|text(s|ing)?|messages?|voice notes?|repl(y|ies)|seen|call(s)?)\b/i],
+  ["food", /\b(food|eat(s|ing)?|khaa?na|pizza|maggi|snacks?|cook(s|ing)?|kitchen|hungry|hangry|diet|biryani|lunch|dinner|order(s|ing)?|foodie)\b/i],
+  ["money", /\b(money|paise|salary|spend(s|ing)?|kanjoos|bills?|udhaar|budget|shopping|buy|rich|amir|cheap|expensive)\b/i],
+  ["exes", /\b(ex|exes|ex's|breakup)\b/i],
+  ["romance", /\b(crush|flirt(s|ing)?|propose|i love you|romantic|dates?|dating|anniversary|surprise)\b/i],
+  ["sleep", /\b(sleep(s|ing)?|so jaata|so jaati|nap|kharrate|snor(e|es|ing)|alarm|wake|uth(ta|ega|ega))\b/i],
+  ["lies", /\b(lie|lies|lying|jhooth|secrets?|fake|natak|pretend(s|ing)?)\b/i],
+  ["jealousy", /\b(jealous|possessive|insecure)\b/i],
+  ["fights", /\b(fights?|ladai|sorry|apologi[sz]e|argu(e|ment)|behes|gussa|angry|naraz|muh phula)\b/i],
+  ["parties", /\b(party|parties|dance|dancer|naach|dj|club|drinks?|peg)\b/i],
+  ["gossip", /\b(gossip|peeth peeche|behind (their|people's|people|someone's) backs?)\b/i],
+  ["forgetting", /\b(forget(s|ting)?|bhool|lost|lose|loses)\b/i],
+  ["travel", /\b(trip|travel|trek|flight|passport|hotel|road trip|summit|tent|holiday)\b/i],
+  ["fitness", /\b(gym|fitness|workout|exercise)\b/i],
+  ["family", /\b(mummy|mom|mother|family|relatives|parents|in-laws?|nani|dadi|ghar walon)\b/i],
+  ["work", /\b(office|boss|meetings?|exam|class|lecture|professor|padhai|studies)\b/i],
+  ["movies", /\b(movies?|films?|series|netflix|binge|bollywood|songs?|sing(s|ing)?|music)\b/i],
+  ["ego", /\b(ego|attitude|show(s|ing)? off|credit|victim|attention)\b/i]
+];
+
+/** The everyday topics a question touches, e.g. ["phone", "romance"]. */
+export function topicsOf(question: string): string[] {
+  return TOPICS.filter(([, re]) => re.test(question)).map(([name]) => name);
+}
+
+/**
+ * Keeps candidates in order, dropping any too similar to `avoid` or to ones
+ * already kept, and any that share a topic with a question already kept.
+ */
+export function pickDiverse(candidates: readonly string[], avoid: readonly string[], count: number, taken: readonly string[] = []): string[] {
   const kept: string[] = [];
+  const usedTopics = new Set(taken.flatMap(topicsOf));
   for (const q of candidates) {
     if (kept.length >= count) break;
     if (avoid.some((a) => tooSimilar(q, a)) || kept.some((k) => tooSimilar(q, k))) continue;
+    const topics = topicsOf(q);
+    if (topics.some((t) => usedTopics.has(t))) continue;
     kept.push(q);
+    for (const t of topics) usedTopics.add(t);
   }
   return kept;
 }

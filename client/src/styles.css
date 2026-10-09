@@ -44,6 +44,38 @@
   }
 }
 
+/* Couple mode: a softer rose palette. Set on <html data-mode="couple"> by App. */
+:root[data-mode="couple"] {
+  --bg: #fff6f8;
+  --brand: #c8325f;
+  --brand-2: #e8668f;
+  --brand-soft: #ffe4ec;
+  --brand-strong: #b0234f;
+  --line: rgba(200, 50, 95, 0.16);
+  --shadow: 0 14px 40px rgba(176, 35, 79, 0.12);
+  --blob-1: #ffc7d6;
+  --blob-2: #ffd9c7;
+  --blob-3: #f9c4e4;
+  --blob-4: #ffe3ea;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-mode="couple"] {
+    --bg: #1a0e14;
+    --card: rgba(46, 24, 34, 0.85);
+    --card-solid: #2e1822;
+    --brand: #f06d95;
+    --brand-2: #f59ab6;
+    --brand-soft: #43202f;
+    --brand-strong: #ffb3c8;
+    --line: rgba(255, 170, 200, 0.18);
+    --blob-1: #5c1f36;
+    --blob-2: #4d2a1f;
+    --blob-3: #4a1d40;
+    --blob-4: #3a1a26;
+  }
+}
+.couple-badge { color: var(--brand-strong); font-weight: 600; font-size: .85rem; }
+
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body {
@@ -119,12 +151,53 @@ ul, ol { list-style: none; margin: 0; padding: 0; }
 }
 
 /* ---- home ---- */
-.logo { text-align: center; padding: 26px 0 6px; }
-.logo h1 { font-size: clamp(2.2rem, 8vw, 3.2rem); margin-top: 6px; }
-.logo p { margin: 10px auto 0; max-width: 440px; color: var(--muted); }
-.how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.how li { text-align: center; padding: 12px 6px; border-radius: 16px; background: var(--card); border: 1px solid var(--line); font-size: .82rem; color: var(--muted); }
-.how b { display: block; font-size: 1.5rem; margin-bottom: 4px; }
+.app.home { max-width: 1000px; }
+.home {
+  display: grid; gap: 18px;
+  grid-template-areas: "copy" "form" "preview" "steps" "about";
+}
+.hero-copy { grid-area: copy; padding-top: 18px; }
+.hero-preview { grid-area: preview; }
+.join-card { grid-area: form; }
+.steps { grid-area: steps; }
+.home .about { grid-area: about; }
+@media (min-width: 820px) {
+  .home {
+    grid-template-columns: 1.1fr 1fr; column-gap: 40px; align-items: start;
+    grid-template-areas: "copy preview" "form preview" "steps steps" "about about";
+  }
+  .hero-copy { padding-top: 40px; }
+  .hero-preview { padding-top: 48px; }
+}
+.eyebrow { margin: 0 0 10px; font-size: .8rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--brand-strong); }
+.hero-copy h1 { font-size: clamp(2.3rem, 7vw, 3.4rem); }
+.lede { margin: 12px 0 0; font-size: 1.08rem; line-height: 1.55; color: var(--muted); max-width: 480px; }
+.lede em { font-style: normal; color: var(--text); font-weight: 600; }
+.perks { margin-top: 16px; display: grid; gap: 8px; }
+.perks li { position: relative; padding-left: 22px; font-size: .95rem; }
+.perks li::before { content: ""; position: absolute; left: 4px; top: .5em; width: 8px; height: 8px; border-radius: 50%; background: var(--brand); }
+
+.preview-card {
+  background: var(--card-solid); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 18px; max-width: 420px; margin: 0 auto;
+}
+.preview-top { display: flex; justify-content: space-between; font-size: .78rem; font-weight: 600; color: var(--muted); }
+.preview-q { font-family: "Fredoka Variable", sans-serif; font-size: 1.25rem; line-height: 1.25; margin: 10px 0 14px; }
+.preview-card ul { display: grid; gap: 8px; }
+.preview-card li { display: grid; grid-template-columns: 24px 64px 1fr 16px; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--bg); font-size: .88rem; }
+.preview-card li.top { outline: 2px solid var(--brand); outline-offset: -2px; }
+.pname { font-weight: 600; }
+.pbar { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.pbar i { display: block; height: 100%; border-radius: inherit; }
+.pcount { font-weight: 700; text-align: right; }
+.preview-foot { margin: 12px 0 0; font-size: .82rem; color: var(--good); font-weight: 600; }
+
+.steps { display: grid; gap: 10px; counter-reset: step; }
+@media (min-width: 640px) { .steps { grid-template-columns: repeat(3, 1fr); } }
+.steps li { counter-increment: step; padding: 14px 16px; border-radius: 16px; background: var(--card); border: 1px solid var(--line); display: grid; gap: 4px; }
+.steps li::before { content: counter(step); font-family: "Fredoka Variable", sans-serif; font-weight: 700; color: var(--brand-strong); }
+.steps b { font-size: .98rem; }
+.steps span { font-size: .86rem; color: var(--muted); }
 
 /* ---- form ---- */
 label, .label { font-weight: 600; font-size: 0.9rem; }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { clientIp } from "../server/app";
-import { ANGLES, COUPLE_ANGLES, HostHistory, pickDiverse, sampleAngles, tooSimilar } from "../server/variety";
+import { ANGLES, COUPLE_ANGLES, HostHistory, pickDiverse, sampleAngles, tooSimilar, topicsOf } from "../server/variety";
 
 describe("tooSimilar", () => {
   it("catches the same idea worded differently", () => {
@@ -27,6 +27,27 @@ describe("pickDiverse", () => {
       10
     );
     expect(out).toEqual(["Who spends the most money on snacks?", "Who is the loudest snorer in the tent?"]);
+  });
+});
+
+describe("topics", () => {
+  it("tags what a question is about, in English and Hinglish", () => {
+    expect(topicsOf("Who always replies late to texts?")).toEqual(expect.arrayContaining(["lateness", "phone"]));
+    expect(topicsOf("Ladai ke baad pehle sorry kaun bolta hai?")).toEqual(["fights"]);
+    expect(topicsOf("Kaun abhi bhi ex ko stalk karta hai?")).toEqual(["exes"]);
+  });
+
+  it("keeps only one question per topic in a round", () => {
+    const out = pickDiverse(
+      ["Who texts the most at night?", "Whose phone gallery is the most embarrassing?", "Who cries at weddings?", "Who is the best cook?"],
+      [],
+      10
+    );
+    expect(out).toEqual(["Who texts the most at night?", "Who cries at weddings?", "Who is the best cook?"]);
+  });
+
+  it("counts topics already taken earlier in the round", () => {
+    expect(pickDiverse(["Who spends the most money?"], [], 5, ["Who is the biggest kanjoos?"])).toEqual([]);
   });
 });
 

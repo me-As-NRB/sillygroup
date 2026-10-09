@@ -285,8 +285,8 @@ export class Room {
     const { genres, context, tone, language, mode } = this.settings;
     // Everything this host has seen in any room, plus this room's rounds (most recent last).
     const seen = [...new Set([...this.deps.questionHistory.get(this.hostKey), ...this.used])];
-    // Ask for a few extra, each about a different life area, then keep the most varied ten.
-    const angles = sampleAngles(QUESTIONS_PER_ROUND + 4, Math.random, mode === "couple");
+    // Ask for extras, each about a different life area, then keep the most varied ones.
+    const angles = sampleAngles(QUESTIONS_PER_ROUND + 6, Math.random, mode === "couple");
     const aiQuestions = await this.deps.generateQuestions({
       count: angles.length,
       genres: genres.map((id) => genreById.get(id)?.label ?? id),
@@ -301,7 +301,9 @@ export class Room {
     // The room may have restarted or emptied while we waited on the AI.
     if (seq !== this.roundSeq || this.players.size === 0) return;
 
-    let questions = pickDiverse(aiQuestions, seen, QUESTIONS_PER_ROUND);
+    // Couple rounds are about the two partners; anything addressed to a group doesn't fit.
+    const fitting = mode === "couple" ? aiQuestions.filter((q) => !/\b(group|everyone|sab log)\b/i.test(q)) : aiQuestions;
+    let questions = pickDiverse(fitting, seen, QUESTIONS_PER_ROUND);
     const fromAi = questions.length;
     tracker.track(fromAi >= QUESTIONS_PER_ROUND / 2 ? "rounds_ai" : "rounds_backup");
     this.log(
@@ -318,14 +320,21 @@ export class Room {
         .filter(Boolean)
         .join(" · ")
     );
+    const bank = { genres, tone, language, mode };
     if (questions.length < QUESTIONS_PER_ROUND) {
+      // Top up from the backup questions: still one question per topic across the whole round.
       const avoid = [...seen, ...questions];
-      const candidates = pickFromBank(40, avoid, { genres, tone, language, mode });
-      questions = [...questions, ...pickDiverse(candidates, avoid, QUESTIONS_PER_ROUND - questions.length)];
+      const candidates = pickFromBank(80, avoid, bank);
+      questions = [...questions, ...pickDiverse(candidates, avoid, QUESTIONS_PER_ROUND - questions.length, questions)];
+    }
+    if (questions.length < QUESTIONS_PER_ROUND) {
+      // Running low: allow a repeated topic, but still no reworded repeats.
+      const avoid = [...seen, ...questions];
+      questions = [...questions, ...pickDiverse(pickFromBank(80, avoid, bank), avoid, QUESTIONS_PER_ROUND - questions.length)];
     }
     if (questions.length < QUESTIONS_PER_ROUND) {
       // Nearly everything has been played already: allow similar ones rather than a short round.
-      questions = [...questions, ...pickFromBank(QUESTIONS_PER_ROUND - questions.length, [...this.used, ...questions], { genres, tone, language, mode })];
+      questions = [...questions, ...pickFromBank(QUESTIONS_PER_ROUND - questions.length, [...this.used, ...questions], bank)];
     }
     this.questions = questions;
     this.used.push(...questions);

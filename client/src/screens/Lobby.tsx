@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { GENRES, LANGUAGES, MAX_GENRES, MODES, TONES, genreById } from "../../../shared/genres";
-import { MAX_CONTEXT_LENGTH, TIMER_CHOICES } from "../../../shared/rules";
+import { MAX_CONTEXT_LENGTH, QUESTIONS_PER_ROUND, TIMER_CHOICES } from "../../../shared/rules";
 import type { GameState } from "../../../shared/types";
 import { About } from "../components/About";
 import { PlayerChip } from "../components/Players";
@@ -121,7 +121,7 @@ function HostSetup({ state, online }: { state: GameState; online: number }) {
   const couple = settings.mode === "couple";
   const missing = state.minPlayers - online;
   const startLabel = state.canStart
-    ? "Start game (10 questions)"
+    ? `Start game (${QUESTIONS_PER_ROUND} questions)`
     : couple
       ? "Couple mode needs exactly 2 players"
       : `Need ${missing} more player${missing === 1 ? "" : "s"}`;
@@ -176,7 +176,7 @@ function HostSetup({ state, online }: { state: GameState; online: number }) {
       />
       <p id="ai-note" className="muted small" style={{ margin: 0 }}>
         {state.aiEnabled
-          ? "AI writes 10 fresh questions from your theme, tone and description."
+          ? `AI writes ${QUESTIONS_PER_ROUND} fresh questions from your theme, tone and description.`
           : "Using the built-in questions (AI not set up). Your theme, tone and language still pick matching ones."}
       </p>
 

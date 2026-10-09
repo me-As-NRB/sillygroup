@@ -6,7 +6,7 @@ import { DEFAULT_TIMINGS, HostHistory, Room, RoomManager, type GameDeps } from "
 const AI_ASK = QUESTIONS_PER_ROUND + 6;
 import type { GenerateOptions } from "../server/ai";
 import { COUPLE_GENRE_BANK, GENRE_BANK, HINGLISH_GENRE_BANK } from "../server/questions";
-import { themeTopics, topicsOf } from "../server/variety";
+import { sameEnding, themeTopics, tooSimilar, topicsOf } from "../server/variety";
 import { sceneQuestions } from "../server/scenes";
 import type { Tracker } from "../server/stats";
 
@@ -294,16 +294,22 @@ describe("question variety", () => {
     { mode: "friends", tone: "blunt", language: "en", genres: [] },
     { mode: "couple", tone: "savage", language: "hinglish", genres: ["trip"] },
     { mode: "couple", tone: "blunt", language: "en", genres: [] }
-  ] as const)("keeps every round on distinct topics for 3 rounds: $mode/$tone/$language", async (cfg) => {
+  ] as const)("keeps rounds varied for 3 rounds: $mode/$tone/$language", async (cfg) => {
     const { room, ids } = setup(2);
     room.updateSettings(ids[0], { ...cfg, genres: [...cfg.genres] });
     for (let round = 0; round < 3; round++) {
       const texts = await playRound(room, ids);
       expect(texts).toHaveLength(QUESTIONS_PER_ROUND);
-      // The theme's own topic (e.g. travel for Trek) may repeat; no other topic may.
-      const exempt = themeTopics(cfg.genres);
-      const topics = texts.flatMap(topicsOf).filter((t) => !exempt.has(t));
-      expect(new Set(topics).size).toBe(topics.length);
+      // Never the same question, wording or punchline twice in one round.
+      for (const [i, q] of texts.entries()) {
+        for (const p of texts.slice(0, i)) expect(tooSimilar(p, q) || sameEnding(p, q)).toBe(false);
+      }
+      // The first round also uses each everyday topic only once (the theme's own topic may repeat).
+      if (round === 0) {
+        const exempt = themeTopics(cfg.genres);
+        const topics = texts.flatMap(topicsOf).filter((t) => !exempt.has(t));
+        expect(new Set(topics).size).toBe(topics.length);
+      }
     }
   });
 

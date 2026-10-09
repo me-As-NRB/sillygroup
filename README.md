@@ -8,7 +8,7 @@ name with the most votes is the right answer. Players who picked it score by spe
 fastest gets 1000, then 850, 700, 550, 400, 250, and everyone after that gets 100. A round
 has 10 questions, and questions never repeat within a room.
 
-- The host picks up to 3 of 51 themes, can describe the group in their own words, and sets
+- The host picks one of 20 themes, can describe the group in their own words, and sets
   the tone (Friendly / Blunt / Savage). AI writes questions to match.
 - After each question everyone sees who voted for whom.
 - **Couple mode** (2 players): questions about the relationship; you score only when you both
@@ -28,7 +28,7 @@ has 10 questions, and questions never repeat within a room.
 | Frontend | React 19, TypeScript, Vite; Canvas share card; Web Audio sound; self-hosted fonts; game screens code-split |
 | Backend | Node, Express, Socket.IO (typed events), TypeScript bundled with esbuild |
 | Shared | One set of types and game rules (`shared/`) used by both client and server |
-| AI | OpenRouter (free models) or Anthropic Claude, with an offline question bank as fallback |
+| AI | Google Gemini, OpenRouter or Anthropic Claude, with an offline question bank (themed scenario questions for every theme) as fallback |
 | Data | Upstash Redis (REST) for stats, optional GoatCounter for visits |
 | Quality | ESLint, `tsc --strict`, Vitest unit + socket integration tests, Playwright E2E (desktop + mobile) with axe accessibility scans, GitHub Actions CI |
 
@@ -87,6 +87,7 @@ Render reads `render.yaml`: it runs `npm ci && npm run build`, then `npm start`.
 
 | Variable | What it does |
 |---|---|
+| `GEMINI_API_KEY` | AI questions via Google Gemini (default model `gemini-flash-latest`; change with `GEMINI_MODEL`). Used first if set. |
 | `OPENROUTER_API_KEY` | AI questions via OpenRouter (defaults to free models; change with `OPENROUTER_MODEL`). |
 | `ANTHROPIC_API_KEY` | AI questions via Claude (paid; change model with `CLAUDE_MODEL`, default `claude-opus-5-5`). |
 | `STATS_KEY` | Secret phrase for your private stats page at `/stats?key=<STATS_KEY>`. |

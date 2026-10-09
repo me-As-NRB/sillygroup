@@ -323,17 +323,16 @@ export class Room {
         .join(" · ")
     );
     const bank = { genres, tone, language, mode };
-    if (questions.length < QUESTIONS_PER_ROUND) {
-      // Top up from the backup questions: still one question per topic across the whole round.
-      const avoid = [...seen, ...questions];
-      const candidates = pickFromBank(80, avoid, bank);
-      questions = [...questions, ...pickDiverse(candidates, avoid, QUESTIONS_PER_ROUND - questions.length, questions, exempt)];
-    }
-    if (questions.length < QUESTIONS_PER_ROUND) {
-      // Running low: allow a repeated topic, but still no reworded repeats.
-      const avoid = [...seen, ...questions];
-      questions = [...questions, ...pickDiverse(pickFromBank(80, avoid, bank), avoid, QUESTIONS_PER_ROUND - questions.length, [], exempt)];
-    }
+    // Top up from the backup questions, relaxing one rule per step. Every step still
+    // refuses the same scene, wording or punchline twice within this round.
+    const topUp = (avoid: readonly string[], checkTopics: boolean) => {
+      if (questions.length >= QUESTIONS_PER_ROUND) return;
+      const candidates = pickFromBank(200, [...this.used, ...questions], bank);
+      questions = [...questions, ...pickDiverse(candidates, avoid, QUESTIONS_PER_ROUND - questions.length, questions, exempt, checkTopics)];
+    };
+    topUp(seen, true); // 1. nothing like anything played before, one question per topic
+    topUp(seen, false); // 2. topics may repeat
+    topUp([], false); // 3. may resemble earlier rounds (never this one)
     if (questions.length < QUESTIONS_PER_ROUND) {
       // Nearly everything has been played already: allow similar ones rather than a short round.
       questions = [...questions, ...pickFromBank(QUESTIONS_PER_ROUND - questions.length, [...this.used, ...questions], bank)];

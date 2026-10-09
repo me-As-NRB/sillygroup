@@ -211,6 +211,90 @@ export const SCENES: Readonly<Record<string, Scenes>> = {
   }
 };
 
+/** Five more scenes for each of the 20 themes, so a round can use ten different situations. */
+export const MORE_SCENES: Readonly<Record<string, Scenes>> = {
+  trip: {
+    en: ["the group got split across two trains", "the homestay host was a strict uncle", "someone's mom joined the trip", "the trip itinerary had 6am starts every day", "all the trip photos got deleted"],
+    hi: ["group do alag trains mein bat jaaye", "homestay ka owner strict uncle nikle", "trip pe kisi ki mummy bhi aa jaayein", "trip mein roz subah 6 baje nikalna ho", "trip ki saari photos delete ho jaayein"]
+  },
+  trek: {
+    en: ["a monkey stole the trek snacks", "the tent zip broke on the coldest night", "someone wore new shoes on the trek", "a stranger on the trek joined our group", "the trek photos had a ghost in the background"],
+    hi: ["bandar trek ke saare snacks le jaaye", "sabse thandi raat tent ki zip toot jaaye", "koi trek pe naye joote pehen ke aa jaaye", "trek pe koi anjaan insaan group mein shaamil ho jaaye", "trek ki photo mein peeche bhoot dikhe"]
+  },
+  party: {
+    en: ["the party theme was announced an hour before", "someone's crush walked in with a date", "the cake was dropped before candles", "the party playlist was all 90s songs", "the party spilled over till sunrise"],
+    hi: ["party ki theme ek ghanta pehle batayi jaaye", "kisi ka crush date ke saath party mein aa jaaye", "candles se pehle hi cake gir jaaye", "party ki playlist mein sirf 90s ke gaane hon", "party subah tak chalti rahe"]
+  },
+  nightout: {
+    en: ["the night out ended at a 4am dhaba", "we lost one friend in the crowd", "the DJ played only remixes", "someone's phone died with the cab booked on it", "the bouncer recognised someone's dad"],
+    hi: ["night out subah 4 baje dhabe pe khatam ho", "bheed mein ek dost kho jaaye", "DJ sirf remix bajaye", "jiske phone pe cab booked ho uska phone band ho jaaye", "bouncer kisi ke papa ko pehchanta ho"]
+  },
+  birthday: {
+    en: ["the birthday gift was a re-gift", "the birthday song was sung by waiters", "the birthday boy's ex sent a cake", "the party had more relatives than friends", "the birthday got celebrated a day late"],
+    hi: ["birthday gift kisi aur ka diya hua nikle", "birthday song waiters gaayein", "birthday pe ex cake bhej de", "party mein dosto se zyada rishtedaar hon", "birthday ek din late manaya jaaye"]
+  },
+  wedding: {
+    en: ["the wedding mehendi got smudged", "the groom's horse refused to move", "an uncle took over the wedding mic", "the wedding had a strict dry policy", "the wedding WhatsApp group had 300 people"],
+    hi: ["shaadi ki mehendi kharaab ho jaaye", "dulhe ki ghodi chalne se mana kar de", "koi uncle shaadi ka mic pakad le", "shaadi mein bilkul dry policy ho", "shaadi ke WhatsApp group mein 300 log hon"]
+  },
+  festivals: {
+    en: ["the Diwali card party got too serious", "the Holi bhang lassi kicked in", "the Navratri garba went past 2am", "the festival bonus never came", "a relative asked for a festival video call"],
+    hi: ["Diwali ki taash party serious ho jaaye", "Holi ki bhaang wali lassi chadh jaaye", "Navratri ka garba raat 2 baje tak chale", "tyohaar ka bonus aaye hi nahi", "rishtedaar tyohaar pe video call maangein"]
+  },
+  office: {
+    en: ["the office announced a 9am daily stand-up", "HR found the meme group", "the boss joined the office Secret Santa", "the coffee machine broke for a week", "the office moved to a new floor with no AC"],
+    hi: ["office roz subah 9 baje stand-up rakh de", "HR ko meme group mil jaaye", "boss office ke Secret Santa mein aa jaaye", "hafte bhar coffee machine kharaab rahe", "office bina AC wale floor pe shift ho jaaye"]
+  },
+  college: {
+    en: ["the college fest needed a host on stage", "the canteen raised all prices overnight", "the group project had one worker", "the viva was moved to 8am", "a senior asked for the class notes"],
+    hi: ["college fest mein stage pe host chahiye ho", "canteen raaton raat daam badha de", "group project mein sirf ek insaan kaam kare", "viva subah 8 baje ho jaaye", "koi senior class ke notes maang le"]
+  },
+  movies: {
+    en: ["the OTT subscription expired mid-episode", "a horror movie night had no lights", "the movie had a 20-minute interval queue", "someone cried at an action movie", "the sequel ruined the original"],
+    hi: ["episode ke beech OTT subscription khatam ho jaaye", "horror movie night pe light chali jaaye", "interval ki line 20 minute lambi ho", "action movie dekhke koi ro pade", "sequel ne original ko barbaad kar diya"]
+  },
+  bollywood: {
+    en: ["a song from Kabhi Khushi Kabhie Gham came on", "we were asked to act out a Bollywood climax", "a dialogue-baazi contest started", "we had to pick a Bollywood villain from the group", "an item song started at a family function"],
+    hi: ["K3G ka gaana baj jaaye", "Bollywood climax act karke dikhana pade", "dialogue-baazi ka muqabla shuru ho jaaye", "group mein se Bollywood villain chunna pade", "family function mein item song baj jaaye"]
+  },
+  cricket: {
+    en: ["the office cricket match got serious", "our gully team lost to kids", "the IPL final clashed with a wedding", "someone dropped an easy catch", "the match bet was a week of dishes"],
+    hi: ["office ka cricket match serious ho jaaye", "humari gully team bachchon se haar jaaye", "IPL final shaadi ke din pad jaaye", "kisi se aasaan catch chhoot jaaye", "match ki shart hafte bhar bartan dhona ho"]
+  },
+  gym: {
+    en: ["the gym crush started working out at the same time", "the trainer made everyone do burpees", "the gym posted a transformation challenge", "someone dropped a weight on the trainer's foot", "the gym played only devotional songs"],
+    hi: ["gym crush same time pe aane lage", "trainer sabse burpees karwaye", "gym transformation challenge rakh de", "kisi se trainer ke pair pe weight gir jaaye", "gym mein sirf bhajan bajne lagein"]
+  },
+  food: {
+    en: ["the waiter brought the wrong order to everyone", "the biryani had no chicken", "a food challenge offered free dinner", "the diet plan started on a buffet day", "someone ordered for the whole table"],
+    hi: ["waiter sabka order galat le aaye", "biryani mein chicken hi na ho", "food challenge jeetne pe free dinner mile", "diet buffet wale din shuru ho", "koi poore table ka order khud kar de"]
+  },
+  dating: {
+    en: ["the date asked to split the bill 70-30", "a date showed up with a friend", "the crush posted a story with someone else", "the date talked only about their ex", "a dating app match turned out to be a cousin"],
+    hi: ["date bill 70-30 split karne bole", "date apne dost ko saath le aaye", "crush kisi aur ke saath story daal de", "date sirf apne ex ki baat kare", "dating app ka match cousin nikle"]
+  },
+  family: {
+    en: ["the family planned a group photo for an hour", "a cousin's wedding needed volunteers", "the family group chat discovered memes", "an aunt asked about everyone's salary", "the whole family moved in for a month"],
+    hi: ["family ek ghante tak group photo plan kare", "cousin ki shaadi mein volunteers chahiye hon", "family group chat ko memes mil jaayein", "koi aunty sabki salary poochhe", "poori family ek mahine ke liye ghar aa jaaye"]
+  },
+  friendship: {
+    en: ["the friendship anniversary was forgotten", "a friend got a new best friend", "the group trip plan died in the chat", "a friend borrowed clothes and never returned them", "a friend posted an old embarrassing photo"],
+    hi: ["dosti ki anniversary bhool jaayein", "kisi dost ka naya best friend ban jaaye", "group trip ka plan chat mein hi mar jaaye", "dost kapde le jaaye aur kabhi na lautaye", "dost purani sharmnaak photo daal de"]
+  },
+  socialmedia: {
+    en: ["a comment from 2015 resurfaced", "someone's live video forgot to end", "the group got tagged in a cringe reel", "a blue tick was announced for one friend", "the screen-time report went to the group"],
+    hi: ["2015 ka koi comment phir se aa jaaye", "kisi ka live video band karna bhool jaaye", "group ko cringe reel mein tag kar diya jaaye", "ek dost ko blue tick mil jaaye", "screen-time report group mein chali jaaye"]
+  },
+  gaming: {
+    en: ["the team lost because of one player", "a gaming stream had zero viewers", "parents walked in mid-raid", "the console controller was hidden by mom", "a game needed someone to sacrifice their character"],
+    hi: ["ek player ki wajah se team haar jaaye", "gaming stream pe ek bhi viewer na ho", "raid ke beech mummy-papa aa jaayein", "mummy controller chhupa dein", "game mein kisi ko apna character qurbaan karna pade"]
+  },
+  secrets: {
+    en: ["the anonymous confession box was opened", "a secret voice note went to the wrong chat", "the group played Never Have I Ever", "someone's search history got read out", "a secret was told to 'just one person'"],
+    hi: ["anonymous confession box khul jaaye", "secret voice note galat chat mein chala jaaye", "group Never Have I Ever khele", "kisi ki search history padhi jaaye", "raaz 'sirf ek insaan' ko bataya jaaye"]
+  }
+};
+
 /** Reactions completing "…, who would ___?" / "…, toh kaun ___?". */
 export const REACTIONS: Readonly<Record<ToneId, { en: readonly string[]; hi: readonly string[] }>> = {
   savage: {
@@ -289,26 +373,25 @@ function shuffle<T>(list: T[], random: () => number): T[] {
  * the first questions each use a different scene AND a different reaction.
  */
 export function sceneQuestions(genre: string, tone: ToneId, language: LanguageId, random: () => number = Math.random): string[] {
-  const scenes = SCENES[genre];
-  if (!scenes) return [];
+  const base = SCENES[genre];
+  if (!base) return [];
+  const more = MORE_SCENES[genre];
+  const scenes: Scenes = { en: [...base.en, ...(more?.en ?? [])], hi: [...base.hi, ...(more?.hi ?? [])] };
   const build = (lang: "en" | "hi") => {
     const s = shuffle([...scenes[lang]], random);
     const r = shuffle([...REACTIONS[tone][lang]], random);
     const out: string[] = [];
-    // Pass k pairs scene i with reaction (i + k): every pass is a fresh combination.
+    // Pass k pairs scene i with reaction (i + k). Within a pass every scene and
+    // reaction is different (scenes ≤ reactions); across passes every pair appears once.
     for (let k = 0; k < r.length; k++) {
       for (let i = 0; i < s.length; i++) {
-        const reaction = r[(i + k * s.length) % r.length];
+        const reaction = r[(i + k) % r.length];
         out.push(lang === "en" ? `If ${s[i]}, who would ${reaction}?` : `Agar ${s[i]}, toh kaun ${reaction}?`);
       }
     }
     return out;
   };
-  if (language === "en") return build("en");
-  // Hinglish: two Hinglish, one English, repeating.
-  const hi = build("hi");
-  const en = build("en");
-  const out: string[] = [];
-  while (hi.length || en.length) out.push(...hi.splice(0, 2), ...en.splice(0, 1));
-  return out;
+  // The English and Hinglish scenes are translations of each other, so a round
+  // uses one language only; mixing them would show the same joke twice.
+  return build(language === "en" ? "en" : "hi");
 }

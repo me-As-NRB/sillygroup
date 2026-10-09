@@ -216,7 +216,7 @@ textarea.input { resize: vertical; min-height: 76px; font-size: .98rem; }
 .seg button.on { background: var(--card-solid); color: var(--text); box-shadow: 0 3px 10px rgba(60, 30, 140, .12); }
 
 /* genre chips */
-.chips { display: flex; flex-wrap: wrap; gap: 8px; max-height: 280px; overflow-y: auto; padding: 2px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 2px; }
 .chip {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 8px 12px; border-radius: 999px;

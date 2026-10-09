@@ -648,10 +648,10 @@ export function pickFromBank(count: number, used: readonly string[], options: Ba
   if (mode === "couple") {
     // Friends' questions ("who in this group…") don't fit two partners: couple banks only.
     const isHinglish = (q: string) => /\b(kaun|kiske|kiska|kiski|kisne)\b/i.test(q);
-    const coupleThemed = mix(
-      genres.flatMap((g) => COUPLE_HINGLISH_GENRE_BANK[g] ?? []),
-      genres.flatMap((g) => COUPLE_GENRE_BANK[g] ?? [])
-    );
+    // Theme questions are translations across languages: one language per round.
+    const coupleThemed = hinglish
+      ? fresh(genres.flatMap((g) => COUPLE_HINGLISH_GENRE_BANK[g] ?? []))
+      : fresh(genres.flatMap((g) => COUPLE_GENRE_BANK[g] ?? []));
     const spicy = tone === "savage" ? fresh(COUPLE_SAVAGE_BANK).filter((q) => hinglish || !isHinglish(q)) : [];
     let couple = mix(COUPLE_HINGLISH_BANK, COUPLE_BANK);
     if (new Set([...coupleThemed, ...spicy, ...couple]).size < count) {
@@ -667,8 +667,13 @@ export function pickFromBank(count: number, used: readonly string[], options: Ba
     const scenarios = genres
       .flatMap((g) => sceneQuestions(g, tone, language, random))
       .filter((q) => !usedSet.has(q.toLowerCase()));
+    // Many theme questions exist in both languages as translations; in Hinglish,
+    // use only the Hinglish ones so the same joke never appears twice.
+    const handwritten = hinglish
+      ? fresh(genres.flatMap((g) => [...(HINGLISH_GENRE_BANK[g] ?? []), ...(EXTRA_HINGLISH_GENRE_BANK[g] ?? [])]))
+      : themed;
     // Savage rounds lead with the scenarios (spicier); Blunt rounds with handwritten ones.
-    const lead = tone === "savage" ? interleave([scenarios, themed]) : interleave([themed, scenarios]);
+    const lead = tone === "savage" ? interleave([scenarios, handwritten]) : interleave([handwritten, scenarios]);
     // Return only on-theme questions, even if fewer than asked for: the caller
     // asks for spares. Only a theme with no material left falls through.
     if (lead.length) return [...new Set(lead)].slice(0, count);

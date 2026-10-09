@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPrompt, cleanQuestions, parseQuestions } from "../server/ai";
+import { buildPrompt, cleanQuestions, geminiRequest, geminiText, parseQuestions } from "../server/ai";
 import {
   GENRE_BANK,
   HINGLISH_BANK,
@@ -84,6 +84,13 @@ describe("pickFromBank", () => {
     expect(qs.some((q) => hinglish.has(q))).toBe(false);
   });
 
+  it("keeps themed Hinglish rounds in Hinglish, so no joke shows up twice in two languages", () => {
+    const qs = pickFromBank(10, [], { genres: ["festivals"], tone: "savage", language: "hinglish" });
+    const englishTwins = [...(GENRE_BANK.festivals ?? []), ...(EXTRA_GENRE_BANK.festivals ?? []), ...sceneQuestions("festivals", "savage", "en")];
+    expect(qs).toHaveLength(10);
+    expect(qs.filter((q) => englishTwins.includes(q))).toEqual([]);
+  });
+
   it("never mixes general savage questions into a themed round", () => {
     const qs = pickFromBank(10, [], { genres: ["party"], tone: "savage", language: "hinglish" });
     expect(qs.every((q) => themeSet("party").has(q))).toBe(true);
@@ -119,6 +126,26 @@ describe("pickFromBank", () => {
 
   it("starts the cycle again once everything has been played", () => {
     expect(pickFromBank(10, [...QUESTION_BANK])).toHaveLength(10);
+  });
+});
+
+describe("Gemini", () => {
+  it("asks for JSON matching the questions schema", () => {
+    const body = geminiRequest("Write 10 questions");
+    expect(body.contents[0].parts[0].text).toBe("Write 10 questions");
+    expect(body.generationConfig.responseMimeType).toBe("application/json");
+    expect(body.generationConfig.responseSchema.required).toEqual(["questions"]);
+  });
+
+  it("reads the answer text and skips thinking parts", () => {
+    const text = geminiText({
+      candidates: [{ content: { parts: [{ text: "planning…", thought: true }, { text: '{"questions":["Who is late?"]}' }] } }]
+    });
+    expect(parseQuestions(text)).toEqual(["Who is late?"]);
+  });
+
+  it("reports a blocked prompt as an error, so the game falls back to built-in questions", () => {
+    expect(() => geminiText({ promptFeedback: { blockReason: "SAFETY" } })).toThrow("SAFETY");
   });
 });
 

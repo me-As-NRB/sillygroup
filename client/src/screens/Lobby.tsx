@@ -107,7 +107,6 @@ interface HostSetupProps {
 function HostSetup({ state, online, needsPlayers, onInvite }: HostSetupProps) {
   const { updateSettings, start } = useGameApi();
   const { settings } = state;
-  const [search, setSearch] = useState("");
   const [context, setContext] = useState(settings.context);
   const contextFocused = useRef(false);
 
@@ -124,11 +123,6 @@ function HostSetup({ state, online, needsPlayers, onInvite }: HostSetupProps) {
   }, [context, settings.context, updateSettings]);
 
   const chosen = settings.genres;
-  const q = search.trim().toLowerCase();
-  const visible = [
-    ...chosen.flatMap((id) => genreById.get(id) ?? []),
-    ...GENRES.filter((g) => !chosen.includes(g.id) && (!q || g.label.toLowerCase().includes(q)))
-  ];
   // Single choice: picking a theme replaces the previous one; picking it again clears it.
   const toggle = (id: string) => updateSettings({ genres: chosen.includes(id) ? [] : [id].slice(0, MAX_GENRES) });
 
@@ -153,17 +147,8 @@ function HostSetup({ state, online, needsPlayers, onInvite }: HostSetupProps) {
           {chosen.length ? genreById.get(chosen[0])?.label : "None: random mix"}
         </span>
       </div>
-      <input
-        className="input"
-        type="search"
-        aria-label="Search themes"
-        placeholder="Search 50 themes…"
-        style={{ padding: "10px 14px", fontSize: ".95rem" }}
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
       <div className="chips" role="group" aria-labelledby="themes-label">
-        {visible.map((g) => {
+        {GENRES.map((g) => {
           const on = chosen.includes(g.id);
           return (
             <button key={g.id} type="button" className={`chip${on ? " on" : ""}`} aria-pressed={on} onClick={() => toggle(g.id)}>

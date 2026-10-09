@@ -104,6 +104,17 @@ function words(question: string): Set<string> {
 }
 
 /** True when two questions are about the same thing, even if worded differently. */
+/** The last few words: scenario questions with the same reaction end the same way. */
+function ending(question: string, n = 4): string {
+  return question.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(Boolean).slice(-n).join(" ");
+}
+
+/** Same punchline ("…who would lie about it for the next five years?"): fine across rounds, not twice in one. */
+export function sameEnding(a: string, b: string): boolean {
+  const ea = ending(a);
+  return ea.split(" ").length >= 4 && ea === ending(b);
+}
+
 export function tooSimilar(a: string, b: string, threshold = 0.6): boolean {
   const wa = words(a);
   const wb = words(b);
@@ -176,14 +187,16 @@ export function pickDiverse(
   avoid: readonly string[],
   count: number,
   taken: readonly string[] = [],
-  exempt: ReadonlySet<string> = new Set()
+  exempt: ReadonlySet<string> = new Set(),
+  checkTopics = true
 ): string[] {
   const kept: string[] = [];
-  const topicsOf_ = (q: string) => topicsOf(q).filter((t) => !exempt.has(t));
+  const topicsOf_ = (q: string) => (checkTopics ? topicsOf(q).filter((t) => !exempt.has(t)) : []);
   const usedTopics = new Set(taken.flatMap(topicsOf_));
   for (const q of candidates) {
     if (kept.length >= count) break;
-    if (avoid.some((a) => tooSimilar(q, a)) || kept.some((k) => tooSimilar(q, k))) continue;
+    const inRound = [...taken, ...kept];
+    if (avoid.some((a) => tooSimilar(q, a)) || inRound.some((k) => tooSimilar(q, k) || sameEnding(q, k))) continue;
     const topics = topicsOf_(q);
     if (topics.some((t) => usedTopics.has(t))) continue;
     kept.push(q);

@@ -1,16 +1,26 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { LanguageId, ModeId, ToneId } from "../shared/types";
 
-// Provider is picked from whichever key is set in the environment:
+// Provider is picked from whichever key is set in the environment (first wins):
+//   GEMINI_API_KEY     -> Google Gemini (gemini-flash-latest by default)
 //   OPENROUTER_API_KEY -> OpenRouter (free models by default)
 //   ANTHROPIC_API_KEY  -> Claude via Anthropic's API
-// With neither, the game uses the built-in question bank.
+// With none, the game uses the built-in question bank.
+const GEMINI_KEY = process.env.GEMINI_API_KEY;
+// "-latest" is Google's alias that always points to the newest Flash model.
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";
 const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "openrouter/free";
 const CLAUDE_MODEL = process.env.CLAUDE_MODEL || "claude-opus-5-5";
-const anthropic = !OPENROUTER_KEY && process.env.ANTHROPIC_API_KEY ? new Anthropic() : null;
+const anthropic = !GEMINI_KEY && !OPENROUTER_KEY && process.env.ANTHROPIC_API_KEY ? new Anthropic() : null;
 
-export const aiProvider: "openrouter" | "anthropic" | null = OPENROUTER_KEY ? "openrouter" : anthropic ? "anthropic" : null;
+export const aiProvider: "gemini" | "openrouter" | "anthropic" | null = GEMINI_KEY
+  ? "gemini"
+  : OPENROUTER_KEY
+    ? "openrouter"
+    : anthropic
+      ? "anthropic"
+      : null;
 export const aiEnabled = Boolean(aiProvider);
 
 export interface GenerateOptions {
@@ -154,6 +164,48 @@ export function cleanQuestions(raw: string[], avoid: readonly string[], count: n
     .slice(0, count);
 }
 
+interface GeminiResponse {
+  candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] }; finishReason?: string }[];
+  promptFeedback?: { blockReason?: string };
+}
+
+/** The request body for Gemini's generateContent, asking for {"questions": [...]} JSON. */
+export function geminiRequest(prompt: string) {
+  return {
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    generationConfig: {
+      temperature: 1, // more varied wording between rounds
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: "OBJECT",
+        properties: { questions: { type: "ARRAY", items: { type: "STRING" } } },
+        required: ["questions"]
+      }
+    }
+  };
+}
+
+/** Joins the answer text of a Gemini response, skipping any "thought" parts. */
+export function geminiText(data: GeminiResponse): string {
+  if (data.promptFeedback?.blockReason) throw new Error(`Gemini blocked the prompt (${data.promptFeedback.blockReason})`);
+  const parts = data.candidates?.[0]?.content?.parts ?? [];
+  return parts
+    .filter((p) => !p.thought)
+    .map((p) => p.text ?? "")
+    .join("");
+}
+
+async function askGemini(prompt: string): Promise<string> {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
+    method: "POST",
+    headers: { "x-goog-api-key": GEMINI_KEY ?? "", "Content-Type": "application/json" },
+    body: JSON.stringify(geminiRequest(prompt)),
+    signal: AbortSignal.timeout(30_000)
+  });
+  if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  return geminiText((await res.json()) as GeminiResponse);
+}
+
 async function askOpenRouter(prompt: string): Promise<string> {
   const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
@@ -207,7 +259,8 @@ export async function generateQuestions(opts: GenerateOptions): Promise<string[]
   if (!aiProvider) return [];
   try {
     const prompt = buildPrompt(opts);
-    const text = aiProvider === "openrouter" ? await askOpenRouter(prompt) : await askClaude(prompt);
+    const ask = { gemini: askGemini, openrouter: askOpenRouter, anthropic: askClaude }[aiProvider];
+    const text = await ask(prompt);
     return cleanQuestions(parseQuestions(text), opts.avoid, opts.count);
   } catch (err) {
     console.error(`AI question generation failed (${aiProvider}):`, err instanceof Error ? err.message : err);

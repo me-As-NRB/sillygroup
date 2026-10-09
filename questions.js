@@ -118,17 +118,118 @@ export const QUESTION_BANK = [
   "Who is the biggest cricket fan?",
   "Who is the most likely to start singing at random?",
   "Who is most likely to plan the next group trip?",
-  "Who is the most likely to say 'trust me' right before a disaster?"
+  "Who is the most likely to say 'trust me' right before a disaster?",
+  "Who is the most responsible person in this group?",
+  "Who is the most stupidly funny without even trying?",
+  "Who would get the whole group into trouble and then disappear?",
+  "Who acts the most mature but is secretly the most childish?",
+  "Who says 'I'll pay you back' and never does?",
+  "Who would be the first to leave the group chat in anger?",
+  "Who always has an excuse ready?",
+  "Who is the worst at taking a joke about themselves?",
+  "Who would sell out the group for a free pizza?",
+  "Who has the most embarrassing story they don't want told?"
 ];
 
-export function pickFromBank(count, used) {
-  const usedSet = new Set(used.map((q) => q.toLowerCase()));
-  let pool = QUESTION_BANK.filter((q) => !usedSet.has(q.toLowerCase()));
-  // Every question has been played in this room; start the cycle again.
-  if (pool.length < count) pool = [...QUESTION_BANK];
-  for (let i = pool.length - 1; i > 0; i--) {
+// Backup questions per genre, so a chosen theme still shows up without AI.
+export const GENRE_BANK = {
+  trek: [
+    "Who's most likely to forget their bag halfway up a trek?",
+    "Who would complain the most on the first uphill climb?",
+    "Who would take 200 photos and zero steps?",
+    "Who would be the one carrying everyone's snacks?",
+    "Who is most likely to get lost on a marked trail?",
+    "Who would give up and ask for a mule ride?",
+    "Who would reach the summit first and never let anyone forget it?",
+    "Who would pack a hair dryer for a camping trek?"
+  ],
+  trip: [
+    "Who would miss the flight because of a last-minute shopping stop?",
+    "Who would plan the whole itinerary and still get the dates wrong?",
+    "Who would lose their passport on day one?",
+    "Who would argue with every hotel receptionist?",
+    "Who would bring back the most useless souvenir?",
+    "Who would spend the trip on their phone instead of sightseeing?",
+    "Who would refuse to try any local food?",
+    "Who's the most responsible one to hold everyone's tickets?"
+  ],
+  party: [
+    "Who is the most stupidly funny person at a party?",
+    "Who would hijack the music at a party?",
+    "Who would fall asleep on the sofa before midnight?",
+    "Who would start a deep life talk at 3am?",
+    "Who would eat all the snacks before guests arrive?",
+    "Who would send a regrettable text after the party?",
+    "Who would be the last one to leave and the first to complain?",
+    "Who would take charge of cleaning up the next morning?"
+  ],
+  office: [
+    "Who is most likely to reply-all by mistake?",
+    "Who joins every meeting on mute and talks anyway?",
+    "Who would sleep through an important call?",
+    "Who takes the longest lunch break?",
+    "Who would become the boss and let it go to their head?",
+    "Who says 'let's take this offline' the most?",
+    "Who is secretly running the whole team?",
+    "Who would forward a meme to the wrong group at work?"
+  ],
+  movies: [
+    "Who would talk through the entire movie?",
+    "Who would cry at an animated film?",
+    "Who would spoil the ending for everyone?",
+    "Who would fall asleep in the first 20 minutes?",
+    "Who would be the first to die in a horror movie?",
+    "Who would play the villain in a movie about this group?",
+    "Who would argue the book was better?",
+    "Who has watched the same movie the most times?"
+  ],
+  dating: [
+    "Who would stalk a date's social media before meeting them?",
+    "Who would plan the most over-the-top first date?",
+    "Who would ghost someone after one date?",
+    "Who would fall in love by the second message?",
+    "Who would bring a friend along to a first date?",
+    "Who gives the best dating advice but never follows it?",
+    "Who would get stood up and still say 'it went well'?",
+    "Who would write the cheesiest love letter?"
+  ],
+  sports: [
+    "Who would argue with the referee the most?",
+    "Who would quit a match because they're losing?",
+    "Who would be the coach who shouts but never plays?",
+    "Who would get injured during the warm-up?",
+    "Who would celebrate a single goal like they won the World Cup?",
+    "Who would pick a team only for the jersey colour?",
+    "Who would blame the pitch after losing?",
+    "Who would be the most responsible team captain?"
+  ],
+  wedding: [
+    "Who is the most stupidly funny at a wedding?",
+    "Who would hit the dance floor first at a wedding?",
+    "Who would cry the most at a wedding?",
+    "Who would go straight to the food counter at a wedding?",
+    "Who would give the most embarrassing wedding speech?",
+    "Who would be mistaken for the groom's relative and go along with it?",
+    "Who would plan their own wedding outfit years in advance?",
+    "Who would end up managing the whole wedding without being asked?"
+  ]
+};
+
+function shuffle(list) {
+  for (let i = list.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
+    [list[i], list[j]] = [list[j], list[i]];
   }
-  return pool.slice(0, count);
+  return list;
+}
+
+// Picks unplayed questions, preferring ones that match the chosen genres.
+export function pickFromBank(count, used, genres = []) {
+  const usedSet = new Set(used.map((q) => q.toLowerCase()));
+  const fresh = (q) => !usedSet.has(q.toLowerCase());
+  const themed = shuffle(genres.flatMap((g) => GENRE_BANK[g] ?? []).filter(fresh));
+  let general = shuffle(QUESTION_BANK.filter(fresh));
+  // Every general question has been played in this room; start the cycle again.
+  if (themed.length + general.length < count) general = shuffle([...QUESTION_BANK]);
+  return [...new Set([...themed, ...general])].slice(0, count);
 }

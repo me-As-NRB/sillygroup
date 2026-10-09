@@ -1,4 +1,4 @@
-﻿services:
+services:
   - type: web
     name: who-in-the-room
     runtime: node
@@ -8,4 +8,12 @@
     healthCheckPath: /health
     envVars:
       - key: OPENROUTER_API_KEY
+        sync: false
+      - key: STATS_KEY
+        sync: false
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
+      - key: GOATCOUNTER_CODE
         sync: false

@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import { MAX_GENRES, genreById, isToneId } from "../shared/genres";
+import { MAX_GENRES, genreById, isLanguageId, isToneId } from "../shared/genres";
 import {
   MAX_CONTEXT_LENGTH,
   MAX_PLAYERS,
@@ -82,7 +82,7 @@ export class Room {
   readonly players = new Map<string, Player>();
   hostId: string | null = null;
   phase: Phase = "lobby";
-  settings: Settings = { timer: 20, genres: [], context: "", tone: "blunt" };
+  settings: Settings = { timer: 20, genres: [], context: "", tone: "blunt", language: "hinglish" };
   emptySince: number | null = null;
 
   private questions: string[] = [];
@@ -200,6 +200,7 @@ export class Room {
     }
     if (typeof patch.context === "string") this.settings.context = patch.context.trim().slice(0, MAX_CONTEXT_LENGTH);
     if (isToneId(patch.tone)) this.settings.tone = patch.tone;
+    if (isLanguageId(patch.language)) this.settings.language = patch.language;
     this.onChange(this);
   }
 
@@ -246,12 +247,13 @@ export class Room {
     tracker.trackTone(this.settings.tone);
 
     const seq = ++this.roundSeq;
-    const { genres, context, tone } = this.settings;
+    const { genres, context, tone, language } = this.settings;
     let questions = await this.deps.generateQuestions({
       count: QUESTIONS_PER_ROUND,
       genres: genres.map((id) => genreById.get(id)?.label ?? id),
       context,
       tone,
+      language,
       playerCount: this.players.size,
       avoid: this.used
     });
@@ -260,7 +262,8 @@ export class Room {
 
     tracker.track(questions.length >= QUESTIONS_PER_ROUND / 2 ? "rounds_ai" : "rounds_backup");
     if (questions.length < QUESTIONS_PER_ROUND) {
-      questions = [...questions, ...pickFromBank(QUESTIONS_PER_ROUND - questions.length, [...this.used, ...questions], genres)];
+      const topUp = pickFromBank(QUESTIONS_PER_ROUND - questions.length, [...this.used, ...questions], { genres, tone, language });
+      questions = [...questions, ...topUp];
     }
     this.questions = questions;
     this.used.push(...questions);

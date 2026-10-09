@@ -1,4 +1,7 @@
-// Backup question bank, used when no ANTHROPIC_API_KEY is set or the AI call fails.
+import type { LanguageId, ToneId } from "../shared/types";
+
+// Backup question bank, used when no AI key is set or the AI call fails.
+
 export const QUESTION_BANK: readonly string[] = [
   "Who in the group is the most self-obsessed?",
   "Who is most likely to become famous one day?",
@@ -215,6 +218,212 @@ export const GENRE_BANK: Readonly<Record<string, readonly string[]>> = {
   ]
 };
 
+export const HINGLISH_BANK: readonly string[] = [
+  "Group mein sabse zyada attitude kiske paas hai?",
+  "Kaun 'bas 5 minute mein aa raha hoon' bolke 1 ghanta lagata hai?",
+  "Group ka sabse bada kanjoos kaun hai?",
+  "Kiske phone ki gallery sabse zyada embarrassing hogi?",
+  "Kaun bina wajah drama create karta hai?",
+  "Group ka asli 'Sharma ji ka beta/beti' kaun hai?",
+  "Kaun 'main toh diet pe hoon' bolke pura pizza kha jaata hai?",
+  "Kaun exam se ek raat pehle padhai shuru karta hai?",
+  "Kaun mummy ka sabse ladla/ladli hai?",
+  "Kaun group chat mein seen karke reply nahi karta?",
+  "Group ka sabse bada gossip master kaun hai?",
+  "Kaun auto wale se 10 rupaye ke liye 20 minute behes karega?",
+  "Kaun last minute pe plan cancel karne mein expert hai?",
+  "Group mein sabse zyada filmy kaun hai?",
+  "Kaun reels dekhte dekhte raat ke 3 baja deta hai?",
+  "Kaun bill aate hi washroom chala jaata hai?",
+  "Kaun Google Maps hone ke bawajood raasta bhatak jaata hai?",
+  "Kaun hamesha 'main free hoon' bolke kabhi free nahi hota?",
+  "Group ka unofficial therapist kaun hai?",
+  "Kaun sabse smoothly jhooth bolta hai?",
+  "Kaun sabse jaldi emotional ho jaata hai?",
+  "Kaun 'bhai trust me' bolke sabko phasaata hai?",
+  "Kaun sabse zyada overthinking karta hai?",
+  "Kaun breakup ke baad sad songs ki playlist banata hai?",
+  "Kiski mummy usko din mein sabse zyada call karti hai?",
+  "Kaun 'kal se gym pakka' bolke kabhi nahi jaata?",
+  "Kaun party ka DJ ban jaata hai bina kisi ke pooche?",
+  "Kaun sabse pehle 'chalo ghar chalte hain yaar' bolta hai?",
+  "Kaun WhatsApp pe 5 minute lambe voice notes bhejta hai?",
+  "Kaun crush ke saamne bilkul chup ho jaata hai?",
+  "Kaun sabka birthday bhool jaata hai, apna kabhi nahi?",
+  "Kaun bina pooche sabko advice deta rehta hai?",
+  "Group mein sabse responsible kaun hai, sabka khayal rakhta hai?",
+  "Kaun raat ke 2 baje Maggi banata hai?",
+  "Kaun 'chill guy/girl' banne ki sabse zyada acting karta hai?",
+  "Kaun relatives ke saamne sabse sanskari ban jaata hai?",
+  "Kaun har photo mein same pose deta hai?",
+  "Kaun udhaar lekar bhool jaata hai?",
+  "Kaun sabse zyada 'mera toh kuch nahi ho sakta' bolta hai?",
+  "Kaun har baat pe 'bro' bolta hai?",
+  "Kaun bina wajah sabse zyada hasta hai?",
+  "Kaun sabse pehle 'main toh bol hi raha tha' bolega?",
+  "Kaun lift mein bhi selfie le leta hai?",
+  "Kaun shopping mein sabse zyada time lagata hai?",
+  "Kaun group ka asli boss hai, bina bole?"
+];
+
+export const HINGLISH_GENRE_BANK: Readonly<Record<string, readonly string[]>> = {
+  trek: [
+    "Trek pe sabse pehle 'aur kitna door hai?' kaun poochega?",
+    "Kaun trek pe apna bag hi bhool jaayega?",
+    "Kaun summit pe sirf photo ke liye pahunchega?",
+    "Kaun trek ke beech Maggi point pe hi ruk jaayega?",
+    "Kaun tent mein sabse zyada kharrate maarega?",
+    "Kaun trek pe charger ke liye sabse zyada pareshaan hoga?"
+  ],
+  trip: [
+    "Trip pe sabse zyada shopping kaun karega?",
+    "Kaun trip plan karke khud hi nahi aayega?",
+    "Kaun hotel mein sabse late uthega?",
+    "Kaun trip ka saara budget bigaad dega?",
+    "Kaun har jagah 'bhai ek photo le le' bolega?",
+    "Kaun trip pe ex ko dikhane ke liye story daalega?"
+  ],
+  party: [
+    "Party mein sabse pehle dance floor pe kaun jaayega?",
+    "Kaun party mein sirf khaane ke liye aata hai?",
+    "Kaun raat 2 baje deep life talks shuru karega?",
+    "Kaun party ke baad sabse embarrassing message bhejega?",
+    "Kaun party mein bhi phone mein ghusa rehta hai?",
+    "Kaun 'bas ek aur gaana' bolke party khatam nahi hone deta?"
+  ],
+  office: [
+    "Kaun meeting mein mute pe bolta rehta hai?",
+    "Boss ka sabse bada chamcha kaun hai?",
+    "Kaun 'kal pakka kar dunga' bolke kabhi nahi karta?",
+    "Kaun lunch break sabse lamba leta hai?",
+    "Kaun office ki saari gossip jaanta hai?",
+    "Kaun Monday ko sabse zyada udaas dikhta hai?"
+  ],
+  college: [
+    "Kaun proxy lagwane mein expert hai?",
+    "Kaun exam ki raat pehli baar syllabus dekhta hai?",
+    "Canteen mein sabse zyada udhaar kiska hai?",
+    "Professor ka favourite kaun hai?",
+    "Kaun har lecture mein so jaata hai?",
+    "Kaun hostel mein sabse zyada Maggi banata hai?"
+  ],
+  hostel: [
+    "Hostel mein sabse zyada doosron ka khaana kaun khaata hai?",
+    "Kaun raat bhar jaagke subah ki class miss karta hai?",
+    "Kaun warden se sabse zyada baar pakda gaya hoga?",
+    "Kaun ghar ka khaana aate hi chhupa leta hai?"
+  ],
+  dating: [
+    "Kaun first date pe bhi late aayega?",
+    "Kaun crush ki story sabse pehle dekhta hai?",
+    "Kaun 'hum sirf dost hain' bolke sabse zyada pyaar mein hai?",
+    "Kaun ex ko abhi bhi stalk karta hai?",
+    "Kaun date pe bill split karne ki baat karega?",
+    "Kaun sabse filmy tareeke se propose karega?"
+  ],
+  wedding: [
+    "Shaadi mein sabse zyada kaun naachega?",
+    "Kaun shaadi mein sirf khaana khaane jaata hai?",
+    "Kaun baraat mein naagin dance karega?",
+    "Kaun shaadi mein apna rishta pakka karwa ke aayega?",
+    "Kaun sangeet ki practice karke bhi galat steps karega?",
+    "Kaun vidaai pe sabse zyada royega?"
+  ],
+  family: [
+    "Kaun 'beta shaadi kab karoge' sawaal se sabse zyada bhaagta hai?",
+    "Kaun family function mein sirf phone chalata hai?",
+    "Kaun family WhatsApp group pe good morning messages bhejta hai?",
+    "Kaun nani-dadi ka favourite hai?",
+    "Kaun relatives ke saamne sabse zyada sanskari banta hai?"
+  ],
+  cricket: [
+    "Kaun gully cricket mein out hoke bhi out nahi maanta?",
+    "Kaun match dekhte waqt TV pe chillata hai?",
+    "Kaun khud ko Dhoni samajhta hai?",
+    "Kaun bat apna hone ki wajah se pehle batting karta hai?"
+  ],
+  bollywood: [
+    "Kaun Bollywood dialogues mein hi baat karta hai?",
+    "Kaun movie mein sabse pehle rota hai?",
+    "Kaun SRK ki tarah baahein phailata hai?",
+    "Kaun har movie ka ending spoil karta hai?"
+  ]
+};
+
+// Personal and exposing, never vulgar. Used when the host picks the Savage tone.
+export const SAVAGE_BANK: readonly string[] = [
+  "Who is most likely to still be secretly in touch with their ex?",
+  "Who would read their partner's chats if they got the chance?",
+  "Who here is the most fake in front of others?",
+  "Who talks behind people's backs the most?",
+  "Who would ditch this group first for a new partner?",
+  "Who has the most red flags in a relationship?",
+  "Who acts confident but is the most insecure inside?",
+  "Who is most likely to be the toxic one in a relationship?",
+  "Who would sell out a friend's secret for good gossip?",
+  "Who pretends to be busy just to avoid people?",
+  "Who has the biggest ego that nobody dares to mention?",
+  "Who is most likely to lie about their salary?",
+  "Who gets the most jealous when someone else gets attention?",
+  "Who would ghost someone after a fight instead of talking?",
+  "Who here has secretly had a crush on someone in this group?",
+  "Who is most likely to be blocked by their ex?",
+  "Who never apologises, even when they're clearly wrong?",
+  "Who only calls when they need something?",
+  "Who would choose money over this friendship?",
+  "Who flirts the most even when they're in a relationship?",
+  "Who would forget this group exists if they got rich?",
+  "Who would cry over an ex in public?",
+  "Who here would be the worst person to date?",
+  "Who plays the victim in every story?",
+  "Who is the most two-faced person in this group?",
+  "Who is secretly the most selfish?",
+  "Who texts first but pretends they don't care?",
+  "Who would leave a friend stranded to impress their crush?",
+  "Who has the biggest secret they'll never tell this group?",
+  "Who takes credit for other people's work?",
+  "Whose phone would cause the biggest scandal if it leaked?",
+  "Who would we never trust with a secret again?"
+];
+
+export const SAVAGE_HINGLISH_BANK: readonly string[] = [
+  "Group mein sabse bada fake kaun hai?",
+  "Kaun peeth peeche sabse zyada baatein karta hai?",
+  "Kaun abhi bhi ex ko secretly stalk karta hai?",
+  "Kaun relationship mein sabse zyada toxic hoga?",
+  "Kaun dost ka secret gossip ke liye bech dega?",
+  "Kiske sabse zyada red flags hain?",
+  "Kaun sirf kaam padne pe hi yaad karta hai?",
+  "Kaun paise ke liye dosti chhod dega?",
+  "Kaun sabse zyada jealous hota hai jab koi aur limelight le?",
+  "Kaun galti hone pe bhi kabhi sorry nahi bolta?",
+  "Kaun crush ke liye dosto ko turant chhod dega?",
+  "Kaun upar se confident, andar se sabse insecure hai?",
+  "Kaun ladai ke baad seedha ghost kar deta hai?",
+  "Kiska attitude sabse zyada unbearable hai?",
+  "Kaun relationship mein hote hue bhi sabse zyada flirt karta hai?",
+  "Kaun 'main single hi khush hoon' ka sabse bada natak karta hai?",
+  "Kaun amir hote hi is group ko bhool jaayega?",
+  "Kaun har kahaani mein khud ko victim banata hai?",
+  "Kaun doosron ke kaam ka credit le leta hai?",
+  "Kaun is group mein kisi pe secretly crush rakhta hai?",
+  "Kaun ex ke ek message pe sabse pehle pighal jaayega?",
+  "Kiska phone kisi ke haath lag gaya toh sabse bada scandal hoga?",
+  "Group ka sabse bada do-muha kaun hai?",
+  "Kaun dost ki party mein jaake usi ki burai karega?",
+  "Kaun salary ke baare mein sabse bada jhooth bolta hai?",
+  "Group ka sabse bada attention seeker kaun hai?",
+  "Kaun sabse zyada 'main toh kisi ki parwah nahi karta' bolta hai?",
+  "Kis pe secret share karna sabse bada risk hai?"
+];
+
+export interface BankOptions {
+  genres?: readonly string[];
+  tone?: ToneId;
+  language?: LanguageId;
+  random?: () => number;
+}
+
 function shuffle<T>(list: T[], random: () => number): T[] {
   for (let i = list.length - 1; i > 0; i--) {
     const j = Math.floor(random() * (i + 1));
@@ -223,18 +432,47 @@ function shuffle<T>(list: T[], random: () => number): T[] {
   return list;
 }
 
-/** Picks unplayed questions, preferring ones that match the chosen genres. */
-export function pickFromBank(
-  count: number,
-  used: readonly string[],
-  genres: readonly string[] = [],
-  random: () => number = Math.random
-): string[] {
+/** Alternates between lists so both languages (or theme and tone) show up early. */
+function interleave(lists: string[][]): string[] {
+  const out: string[] = [];
+  for (let i = 0; lists.some((l) => i < l.length); i++) {
+    for (const l of lists) if (i < l.length) out.push(l[i]);
+  }
+  return out;
+}
+
+/**
+ * Picks unplayed questions: the chosen theme first, then (for Savage) the
+ * exposing questions, then general ones. Hinglish mixes in English ~1 in 3.
+ */
+export function pickFromBank(count: number, used: readonly string[], options: BankOptions = {}): string[] {
+  const { genres = [], tone = "blunt", language = "en", random = Math.random } = options;
   const usedSet = new Set(used.map((q) => q.toLowerCase()));
-  const fresh = (q: string) => !usedSet.has(q.toLowerCase());
-  const themed = shuffle(genres.flatMap((g) => GENRE_BANK[g] ?? []).filter(fresh), random);
-  let general = shuffle(QUESTION_BANK.filter(fresh), random);
-  // Every general question has been played in this room; start the cycle again.
-  if (themed.length + general.length < count) general = shuffle([...QUESTION_BANK], random);
-  return [...new Set([...themed, ...general])].slice(0, count);
+  const fresh = (list: readonly string[]) => shuffle(list.filter((q) => !usedSet.has(q.toLowerCase())), random);
+  const hinglish = language === "hinglish";
+
+  // Hinglish: two Hinglish questions, then one English, repeating.
+  const mix = (desi: readonly string[], english: readonly string[]): string[] => {
+    const en = fresh(english);
+    if (!hinglish) return en;
+    const hi = fresh(desi);
+    const out: string[] = [];
+    while (hi.length || en.length) out.push(...hi.splice(0, 2), ...en.splice(0, 1));
+    return out;
+  };
+
+  const themed = mix(
+    genres.flatMap((g) => HINGLISH_GENRE_BANK[g] ?? []),
+    genres.flatMap((g) => GENRE_BANK[g] ?? [])
+  );
+  const savage = tone === "savage" ? mix(SAVAGE_HINGLISH_BANK, SAVAGE_BANK) : [];
+  let general = mix(HINGLISH_BANK, QUESTION_BANK);
+  // Everything has been played in this room; start the cycle again.
+  if (new Set([...themed, ...savage, ...general]).size < count) {
+    general = shuffle([...(hinglish ? HINGLISH_BANK : []), ...QUESTION_BANK], random);
+  }
+
+  // Savage rounds: theme and savage questions take turns, so it stays on-theme but spicy.
+  const lead = savage.length ? interleave([themed.slice(0, 5), savage]) : themed;
+  return [...new Set([...lead, ...themed, ...general])].slice(0, count);
 }

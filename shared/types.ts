@@ -3,12 +3,15 @@
 
 export type Phase = "lobby" | "loading" | "question" | "reveal" | "final";
 export type ToneId = "friendly" | "blunt" | "savage";
+export type LanguageId = "hinglish" | "en";
 
 export interface Settings {
   timer: number;
+  /** The chosen theme; at most one id. */
   genres: string[];
   context: string;
   tone: ToneId;
+  language: LanguageId;
 }
 
 export interface PlayerRef {

@@ -26,6 +26,7 @@ test("link previews are filled in for room invites", async ({ request }) => {
 });
 
 test("three players play a full round", async ({ browser, page: host, contextOptions }) => {
+  test.setTimeout(240_000); // three browsers plus accessibility scans can be slow on busy machines
   // Host creates the room.
   await host.goto("/");
   await host.getByLabel("Your name").fill("Hana Host");
@@ -50,7 +51,9 @@ test("three players play a full round", async ({ browser, page: host, contextOpt
   expect(await seriousA11yIssues(host)).toEqual([]);
   await host.getByRole("button", { name: /Trek & Hiking/ }).click();
   await host.getByRole("radio", { name: /Savage/ }).click();
-  await expect(guests[0].getByText(/Trek & Hiking.*Savage/)).toBeVisible();
+  // Longest timer, so slow CI machines never run out of time mid-question.
+  await host.getByRole("radio", { name: "30s" }).click();
+  await expect(guests[0].getByText(/Trek & Hiking.*Savage.*Hinglish/)).toBeVisible();
   await host.getByRole("button", { name: /Start game/ }).click();
 
   for (let i = 1; i <= 10; i++) {

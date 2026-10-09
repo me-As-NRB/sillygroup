@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { GENRES, MAX_GENRES, TONES, genreById } from "../../../shared/genres";
+import { GENRES, LANGUAGES, MAX_GENRES, TONES, genreById } from "../../../shared/genres";
 import { MAX_CONTEXT_LENGTH, TIMER_CHOICES } from "../../../shared/rules";
 import type { GameState } from "../../../shared/types";
 import { PlayerChip } from "../components/Players";
@@ -111,14 +111,13 @@ function HostSetup({ state, online }: { state: GameState; online: number }) {
   }, [context, settings.context, updateSettings]);
 
   const chosen = settings.genres;
-  const full = chosen.length >= MAX_GENRES;
   const q = search.trim().toLowerCase();
   const visible = [
     ...chosen.flatMap((id) => genreById.get(id) ?? []),
     ...GENRES.filter((g) => !chosen.includes(g.id) && (!q || g.label.toLowerCase().includes(q)))
   ];
-  const toggle = (id: string) =>
-    updateSettings({ genres: chosen.includes(id) ? chosen.filter((x) => x !== id) : [...chosen, id] });
+  // Single choice: picking a theme replaces the previous one; picking it again clears it.
+  const toggle = (id: string) => updateSettings({ genres: chosen.includes(id) ? [] : [id].slice(0, MAX_GENRES) });
 
   const enough = online >= state.minPlayers;
   const missing = state.minPlayers - online;
@@ -130,10 +129,10 @@ function HostSetup({ state, online }: { state: GameState; online: number }) {
       </h2>
       <div className="row spread">
         <span className="label" id="themes-label">
-          What kind of questions?
+          Pick one theme
         </span>
         <span className="muted small" aria-live="polite">
-          {chosen.length}/{MAX_GENRES} picked
+          {chosen.length ? genreById.get(chosen[0])?.label : "None: random mix"}
         </span>
       </div>
       <input
@@ -149,14 +148,7 @@ function HostSetup({ state, online }: { state: GameState; online: number }) {
         {visible.map((g) => {
           const on = chosen.includes(g.id);
           return (
-            <button
-              key={g.id}
-              type="button"
-              className={`chip${on ? " on" : ""}`}
-              aria-pressed={on}
-              disabled={!on && full}
-              onClick={() => toggle(g.id)}
-            >
+            <button key={g.id} type="button" className={`chip${on ? " on" : ""}`} aria-pressed={on} onClick={() => toggle(g.id)}>
               <span aria-hidden="true">{g.emoji}</span> {g.label}
             </button>
           );
@@ -180,10 +172,16 @@ function HostSetup({ state, online }: { state: GameState; online: number }) {
       />
       <p id="ai-note" className="muted small" style={{ margin: 0 }}>
         {state.aiEnabled
-          ? "✨ AI writes 10 fresh questions from your themes and description."
-          : "Using the built-in questions (AI not set up). Themes still pick matching questions where available."}
+          ? "✨ AI writes 10 fresh questions from your theme, tone and description."
+          : "Using the built-in questions (AI not set up). Your theme, tone and language still pick matching ones."}
       </p>
 
+      <Segmented
+        label="Language"
+        value={settings.language}
+        options={LANGUAGES.map((l) => ({ value: l.id, label: `${l.emoji} ${l.label}`, hint: l.hint }))}
+        onChange={(language) => updateSettings({ language })}
+      />
       <Segmented
         label="How blunt?"
         value={settings.tone}

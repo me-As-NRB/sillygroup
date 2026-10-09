@@ -1,4 +1,4 @@
-import { genreById, toneById } from "../../../shared/genres";
+import { genreById, languageById, toneById } from "../../../shared/genres";
 import type { Settings } from "../../../shared/types";
 
 /** "🥾 Trek & Hiking · 🎉 House Party" or "🎲 Random Mix". */
@@ -10,8 +10,11 @@ export function genresLabel(genres: readonly string[]): string {
   return labels.length ? labels.join(" · ") : "🎲 Random Mix";
 }
 
-/** Themes plus tone, e.g. "🥾 Trek & Hiking  |  😏 Blunt". */
+/** Theme, tone and language, e.g. "🥾 Trek & Hiking  |  🔥 Savage  |  🇮🇳 Hinglish". */
 export function themeLabel(settings: Settings): string {
   const tone = toneById.get(settings.tone);
-  return [genresLabel(settings.genres), tone ? `${tone.emoji} ${tone.label}` : null].filter(Boolean).join("  |  ");
+  const language = languageById.get(settings.language);
+  return [genresLabel(settings.genres), tone && `${tone.emoji} ${tone.label}`, language && `${language.emoji} ${language.label}`]
+    .filter(Boolean)
+    .join("  |  ");
 }

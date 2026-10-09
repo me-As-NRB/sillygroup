@@ -72,25 +72,37 @@ describe("host settings", () => {
     room.updateSettings(ids[1], { tone: "savage" });
     expect(room.settings.tone).toBe("blunt");
 
+    expect(room.settings.language).toBe("hinglish"); // default
     room.updateSettings(ids[0], {
       tone: "savage",
       timer: 30,
-      genres: ["trek", "bogus", "party", "office", "movies"],
+      language: "en",
+      genres: ["bogus", "trek", "party"],
       context: `  ${"x".repeat(400)}  `
     });
-    expect(room.settings).toMatchObject({ tone: "savage", timer: 30, genres: ["trek", "party", "office"] });
+    expect(room.settings).toMatchObject({ tone: "savage", timer: 30, language: "en", genres: ["trek"] });
     expect(room.settings.context).toHaveLength(300);
 
-    room.updateSettings(ids[0], { timer: 99, tone: "evil" as never });
-    expect(room.settings).toMatchObject({ timer: 30, tone: "savage" });
+    room.updateSettings(ids[0], { timer: 99, tone: "evil" as never, language: "fr" as never });
+    expect(room.settings).toMatchObject({ timer: 30, tone: "savage", language: "en" });
   });
 
-  it("needs at least three connected players and the host to start", () => {
+  it("starts with two players, but only when the host asks", () => {
+    const one = setup(1);
+    expect(one.room.start(one.ids[0])).toBe(false);
     const two = setup(2);
-    expect(two.room.start(two.ids[0])).toBe(false);
-    const three = setup(3);
-    expect(three.room.start(three.ids[1])).toBe(false);
-    expect(three.room.start(three.ids[0])).toBe(true);
+    expect(two.room.start(two.ids[1])).toBe(false);
+    expect(two.room.start(two.ids[0])).toBe(true);
+  });
+
+  it("counts a split vote between two players as a tie that both win", async () => {
+    const { room, ids } = setup(2);
+    await startAndWait(room, ids[0]);
+    room.vote(ids[0], ids[1]);
+    room.vote(ids[1], ids[0]);
+    const reveal = room.stateFor(ids[0]).reveal!;
+    expect(reveal.winners).toHaveLength(2);
+    expect(reveal.awards.map((a) => a.points)).toEqual([1000, 850]);
   });
 });
 
@@ -169,7 +181,14 @@ describe("a full round", () => {
     await startAndWait(room, ids[0]);
 
     expect(generateQuestions).toHaveBeenCalledWith(
-      expect.objectContaining({ count: 10, genres: ["Trek & Hiking"], tone: "friendly", context: "Manali", playerCount: 3 })
+      expect.objectContaining({
+        count: 10,
+        genres: ["Trek & Hiking"],
+        tone: "friendly",
+        language: "hinglish",
+        context: "Manali",
+        playerCount: 3
+      })
     );
     expect(room.stateFor(ids[0]).question!.text).toBe("Who would win a staring contest?");
     expect(room.stateFor(ids[0]).question!.total).toBe(10);

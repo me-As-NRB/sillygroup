@@ -1,5 +1,5 @@
 // Backup question bank, used when no ANTHROPIC_API_KEY is set or the AI call fails.
-export const QUESTION_BANK = [
+export const QUESTION_BANK: readonly string[] = [
   "Who in the group is the most self-obsessed?",
   "Who is most likely to become famous one day?",
   "Who takes the longest to reply to messages?",
@@ -132,7 +132,7 @@ export const QUESTION_BANK = [
 ];
 
 // Backup questions per genre, so a chosen theme still shows up without AI.
-export const GENRE_BANK = {
+export const GENRE_BANK: Readonly<Record<string, readonly string[]>> = {
   trek: [
     "Who's most likely to forget their bag halfway up a trek?",
     "Who would complain the most on the first uphill climb?",
@@ -215,21 +215,26 @@ export const GENRE_BANK = {
   ]
 };
 
-function shuffle(list) {
+function shuffle<T>(list: T[], random: () => number): T[] {
   for (let i = list.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(random() * (i + 1));
     [list[i], list[j]] = [list[j], list[i]];
   }
   return list;
 }
 
-// Picks unplayed questions, preferring ones that match the chosen genres.
-export function pickFromBank(count, used, genres = []) {
+/** Picks unplayed questions, preferring ones that match the chosen genres. */
+export function pickFromBank(
+  count: number,
+  used: readonly string[],
+  genres: readonly string[] = [],
+  random: () => number = Math.random
+): string[] {
   const usedSet = new Set(used.map((q) => q.toLowerCase()));
-  const fresh = (q) => !usedSet.has(q.toLowerCase());
-  const themed = shuffle(genres.flatMap((g) => GENRE_BANK[g] ?? []).filter(fresh));
-  let general = shuffle(QUESTION_BANK.filter(fresh));
+  const fresh = (q: string) => !usedSet.has(q.toLowerCase());
+  const themed = shuffle(genres.flatMap((g) => GENRE_BANK[g] ?? []).filter(fresh), random);
+  let general = shuffle(QUESTION_BANK.filter(fresh), random);
   // Every general question has been played in this room; start the cycle again.
-  if (themed.length + general.length < count) general = shuffle([...QUESTION_BANK]);
+  if (themed.length + general.length < count) general = shuffle([...QUESTION_BANK], random);
   return [...new Set([...themed, ...general])].slice(0, count);
 }

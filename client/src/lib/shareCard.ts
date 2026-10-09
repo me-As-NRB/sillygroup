@@ -1,12 +1,14 @@
-import { GENRES } from "./genres.js";
+import { genreById } from "../../../shared/genres";
+import type { FinalView } from "../../../shared/types";
 
 // Draws a 1080x1350 (Instagram portrait) result card and returns it as a PNG blob.
 const W = 1080;
 const H = 1350;
-const FONT_DISPLAY = "Fredoka, 'Segoe UI', sans-serif";
-const FONT_BODY = "Inter, 'Segoe UI', sans-serif";
+const FONT_DISPLAY = "'Fredoka Variable', 'Segoe UI', sans-serif";
+const FONT_BODY = "'Inter Variable', 'Segoe UI', sans-serif";
+type Ctx = CanvasRenderingContext2D;
 
-function roundRect(ctx, x, y, w, h, r) {
+function roundRect(ctx: Ctx, x: number, y: number, w: number, h: number, r: number): void {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.arcTo(x + w, y, x + w, y + h, r);
@@ -16,9 +18,9 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function wrap(ctx, text, maxWidth) {
+function wrap(ctx: Ctx, text: string, maxWidth: number): string[] {
   const words = text.split(" ");
-  const lines = [];
+  const lines: string[] = [];
   let line = "";
   for (const w of words) {
     const test = line ? `${line} ${w}` : w;
@@ -32,7 +34,7 @@ function wrap(ctx, text, maxWidth) {
 }
 
 // Shrinks the font until the text fits on one line.
-function fitText(ctx, text, maxWidth, size, weight, family) {
+function fitText(ctx: Ctx, text: string, maxWidth: number, size: number, weight: number, family: string): void {
   let s = size;
   do {
     ctx.font = `${weight} ${s}px ${family}`;
@@ -40,12 +42,14 @@ function fitText(ctx, text, maxWidth, size, weight, family) {
   } while (ctx.measureText(text).width > maxWidth && s > 24);
 }
 
-export async function makeShareCard({ leaderboard, highlights, genres, youId }) {
-  await document.fonts.ready;
+export async function makeShareCard({ leaderboard, highlights, genres, youId }: FinalView & { youId: string }): Promise<Blob | null> {
+  // Canvas text only uses fonts that are already loaded, so load both explicitly.
+  await Promise.all([document.fonts.load(`700 40px ${FONT_DISPLAY}`), document.fonts.load(`600 34px ${FONT_BODY}`)]).catch(() => {});
   const canvas = document.createElement("canvas");
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
 
   // Background
   const bg = ctx.createLinearGradient(0, 0, W, H);
@@ -68,8 +72,12 @@ export async function makeShareCard({ leaderboard, highlights, genres, youId }) 
   // Header
   ctx.font = `600 44px ${FONT_DISPLAY}`;
   ctx.fillText("👀 Who In The Room", W / 2, 110);
-  const theme = genres.map((id) => GENRES.find((g) => g.id === id)).filter(Boolean)
-    .map((g) => `${g.emoji} ${g.label}`).join("  ·  ");
+  const theme = genres
+    .flatMap((id) => {
+      const g = genreById.get(id);
+      return g ? [`${g.emoji} ${g.label}`] : [];
+    })
+    .join("  ·  ");
   if (theme) {
     ctx.font = `500 30px ${FONT_BODY}`;
     ctx.fillStyle = "rgba(255,255,255,0.85)";

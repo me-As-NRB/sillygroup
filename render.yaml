@@ -3,7 +3,7 @@ services:
     name: who-in-the-room
     runtime: node
     plan: free
-    buildCommand: npm install
+    buildCommand: npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /health
     envVars:

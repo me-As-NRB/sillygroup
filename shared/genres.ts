@@ -1,5 +1,20 @@
+import type { ToneId } from "./types";
+
+export interface Genre {
+  id: string;
+  emoji: string;
+  label: string;
+}
+
+export interface Tone {
+  id: ToneId;
+  emoji: string;
+  label: string;
+  hint: string;
+}
+
 // Shared by the server (validation, AI prompt) and the browser (genre picker).
-export const GENRES = [
+export const GENRES: readonly Genre[] = [
   { id: "trip", emoji: "✈️", label: "Trip & Travel" },
   { id: "trek", emoji: "🥾", label: "Trek & Hiking" },
   { id: "roadtrip", emoji: "🚗", label: "Road Trip" },
@@ -53,10 +68,17 @@ export const GENRES = [
   { id: "random", emoji: "🎲", label: "Random Mix" }
 ];
 
-export const TONES = [
+export const TONES: readonly Tone[] = [
   { id: "friendly", emoji: "😊", label: "Friendly", hint: "Wholesome, everyone laughs" },
   { id: "blunt", emoji: "😏", label: "Blunt", hint: "Direct and specific" },
   { id: "savage", emoji: "🔥", label: "Savage", hint: "Proper roasts, still no cruelty" }
 ];
 
 export const MAX_GENRES = 3;
+
+export const genreById = new Map(GENRES.map((g) => [g.id, g]));
+export const toneById = new Map(TONES.map((t) => [t.id, t]));
+
+export function isToneId(value: unknown): value is ToneId {
+  return typeof value === "string" && toneById.has(value as ToneId);
+}

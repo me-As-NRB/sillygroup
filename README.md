@@ -1,77 +1,97 @@
 # Who In The Room 👀
 
-A real-time party game for 3–20 friends. Each question is about the group
-("Who in the group is the most self-obsessed?"). Everyone votes for a player,
-and the name with the most votes is the right answer. Players who picked it
-score by speed: the fastest gets 1000, then 850, 700, 550, 400, 250, and
-everyone after that gets 100. Each round has 10 questions, and questions
-never repeat within a room.
+[![CI](https://github.com/me-As-NRB/sillygroup/actions/workflows/ci.yml/badge.svg)](https://github.com/me-As-NRB/sillygroup/actions/workflows/ci.yml)
 
-- The host picks up to 3 of 50 themes (Trek, Party, Movies, Dating, Cricket…), can describe
-  the group in their own words, and chooses how blunt the questions are (Friendly / Blunt / Savage).
+A real-time multiplayer party game for 3–20 friends. Each question is about the group
+("Who's most likely to forget their bag on a trek?"). Everyone votes for a player, and the
+name with the most votes is the right answer. Players who picked it score by speed: the
+fastest gets 1000, then 850, 700, 550, 400, 250, and everyone after that gets 100. A round
+has 10 questions, and questions never repeat within a room.
+
+- The host picks up to 3 of 51 themes, can describe the group in their own words, and sets
+  the tone (Friendly / Blunt / Savage). AI writes questions to match.
 - After each question everyone sees who voted for whom.
-- Sound effects (with a mute button) and confetti, generated in the browser with no extra files.
-- Players only type their name. One person creates a room and shares the link or code.
-- Works on phones and laptops.
-- Real-time over WebSockets (Socket.IO).
-- AI-written questions when `OPENROUTER_API_KEY` or `ANTHROPIC_API_KEY` is set. Otherwise
-  (or if the AI call fails) it uses a built-in bank of 120 questions.
+- Players only type their name and join by link or 4-letter code. Refreshing the page
+  rejoins the same game.
+- Shareable result card after each round, WhatsApp/Instagram link previews, sound effects
+  and confetti, all generated in the browser.
+- Works on phones and laptops, with keyboard and screen-reader support.
 
-## Run locally
+## Tech
+
+| | |
+|---|---|
+| Frontend | React 19, TypeScript, Vite; Canvas share card; Web Audio sound; self-hosted fonts; game screens code-split |
+| Backend | Node, Express, Socket.IO (typed events), TypeScript bundled with esbuild |
+| Shared | One set of types and game rules (`shared/`) used by both client and server |
+| AI | OpenRouter (free models) or Anthropic Claude, with an offline question bank as fallback |
+| Data | Upstash Redis (REST) for stats, optional GoatCounter for visits |
+| Quality | ESLint, `tsc --strict`, Vitest unit + socket integration tests, Playwright E2E (desktop + mobile) with axe accessibility scans, GitHub Actions CI |
+
+**Lighthouse (mobile, simulated slow 4G):** Performance 90, Accessibility 100, Best Practices 100, SEO 100.
+
+### Design notes
+
+- **The server is in charge.** All votes, timing and scoring happen in `server/game.ts`.
+  Clients get a full snapshot of the game after every change and only render it, so a player
+  can't cheat by editing the page.
+- **Countdowns don't depend on phone clocks.** The server sends *time remaining*, not an end
+  time, so a phone with the wrong clock still shows the right countdown.
+- **Game logic is a plain class with dependencies passed in** (AI, stats, timings, clock).
+  Tests run a full round with fake timers in milliseconds, without any network.
+- **Reconnect tokens:** each player gets a private token kept in `sessionStorage`. A refresh
+  or network drop rejoins the same seat; the host role passes on after a 10-second grace period.
+- **Abuse limits:** room creation is limited per IP and socket events per connection.
+  All input is checked on the server, user text is never inserted as HTML, and the stats page
+  uses a constant-time key comparison.
+- **Prompt safety:** the host's description goes into the AI prompt fenced as data, not as
+  instructions.
+
+### Project layout
+
+```
+shared/    types, game rules (scoring, vote tally), themes
+server/    game.ts (Room, RoomManager), app.ts (HTTP + sockets), ai.ts, questions.ts, stats.ts, pages.ts
+client/    React app: hooks/useGame.ts, screens/, components/, lib/ (sound, confetti, share card)
+tests/     Vitest: rules, game flow, questions/AI parsing, pages, client helpers, socket integration
+e2e/       Playwright: 3 browsers play a full round; accessibility scans; refresh-rejoin
+```
+
+## Develop
 
 ```bash
 npm install
-npm start
+```
+```bash
+npm run dev
 ```
 
-Open http://localhost:3000. To test alone, open 3 browser windows (or a
-private window plus your phone on the same Wi‑Fi at `http://<your-PC-IP>:3000`).
+This starts the game server on port 3000 and the Vite dev server at http://localhost:5173
+(which forwards socket traffic to the game server). To test alone, open 3 browser windows,
+or use your phone on the same Wi-Fi at `http://<your-PC-IP>:5173`.
 
-## Put it online for free (Render.com)
+| Command | What it does |
+|---|---|
+| `npm run check` | Lint, type check, unit and integration tests |
+| `npm run test:e2e` | Builds the app and plays full games in real browsers |
+| `npm run build` then `npm start` | Production build, served at http://localhost:3000 |
 
-1. **Push the code to GitHub.** Create an empty repo at https://github.com/new, then in this folder run:
-   ```bash
-   git init
-   git add .
-   git commit -m "Who In The Room game"
-   git branch -M main
-   git remote add origin https://github.com/<you>/<repo>.git
-   git push -u origin main
-   ```
-2. **Create the Render service.** Sign up at https://render.com with GitHub, then choose
-   **New → Blueprint** and pick your repo. Render reads `render.yaml` and sets everything up
-   on the free plan. (Or choose **New → Web Service** with build command `npm install` and
-   start command `npm start`.)
-3. **(Optional) Turn on AI questions.** In Render open **Environment** and add one of:
-   - `OPENROUTER_API_KEY`: a key from https://openrouter.ai/keys. By default this uses
-     OpenRouter's free models (`openrouter/free`). Set `OPENROUTER_MODEL` to pick a specific one.
-   - `ANTHROPIC_API_KEY`: a key from https://console.anthropic.com (paid, a few cents per round).
-     Set `CLAUDE_MODEL` to change the model; the default is `claude-opus-5-5`.
+## Deploy (Render, free)
 
-   Leave both empty to use the built-in questions. Never put keys in the code or commit them to GitHub.
-4. Share your `https://<name>.onrender.com` link.
-
-## Stats (how many people played)
-
-Set these in Render → **Environment**. All are optional.
+Render reads `render.yaml`: it runs `npm ci && npm run build`, then `npm start`. Every push to
+`main` redeploys automatically. Set these under **Environment** (all optional):
 
 | Variable | What it does |
 |---|---|
-| `STATS_KEY` | Any long secret phrase you choose. Your private stats page is then at `https://<your-site>/stats?key=<STATS_KEY>`. |
-| `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` | Keep the stats permanently. Create a free Redis database at https://upstash.com and copy the two **REST** values. Without them the numbers reset whenever the server sleeps. |
-| `GOATCOUNTER_CODE` | Count website visitors with GoatCounter (free). Sign up at https://www.goatcounter.com, then enter just the code, e.g. `whoinroom` for `whoinroom.goatcounter.com`. |
+| `OPENROUTER_API_KEY` | AI questions via OpenRouter (defaults to free models; change with `OPENROUTER_MODEL`). |
+| `ANTHROPIC_API_KEY` | AI questions via Claude (paid; change model with `CLAUDE_MODEL`, default `claude-opus-5-5`). |
+| `STATS_KEY` | Secret phrase for your private stats page at `/stats?key=<STATS_KEY>`. |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Keep stats permanently (free Redis at upstash.com). Without them, stats reset when the server sleeps. |
+| `GOATCOUNTER_CODE` | Count visitors with GoatCounter, e.g. `whoinroom`. |
 
-The stats page shows players, rooms, finished rounds, average group size, how many rooms
-played a second round, players who went on to create their own room, popular themes,
-and a 14-day chart.
+Never put keys in the code or commit them.
 
-## Sharing
-
-- After each round, players get a result card (podium plus the group's most one-sided
-  verdicts) that they can share to Instagram or WhatsApp, or save as an image.
-- Links show a proper preview (title, description, image) in WhatsApp, Instagram and other
-  apps. Room links say "Join my game! Room ABCD".
-
-**Free-plan notes:** the server sleeps after 15 minutes with no visitors. The first person to
-open the link waits about 30–60 seconds while it wakes up. Rooms live in memory, so a
-restart or sleep ends any games in progress.
+**Free-plan notes:** the server sleeps after 15 minutes with no visitors, and the first
+visitor then waits about 30–60 seconds. Rooms live in memory on one server, so a restart ends
+games in progress. Running several servers would need a shared store (e.g. the Socket.IO Redis
+adapter).

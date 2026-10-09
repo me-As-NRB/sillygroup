@@ -1,13 +1,21 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { isVulgar } from "../shared/rules";
 import type { LanguageId, ModeId, ToneId } from "../shared/types";
 
 // Every AI whose key is set is used, in this order; if one fails (bad key, rate
 // limit, outage, too slow) the next is tried, and only then the built-in questions.
+//   GEMINI_API_KEY                       -> Google Gemini (gemini-flash-latest)
 //   GROQ_API_KEY                         -> Groq (fast open models)
 //   OPENROUTER_API_KEY, OPENROUTER_API_KEY_2 -> OpenRouter (free models)
 //   ANTHROPIC_API_KEY                    -> Claude via Anthropic's API
 // Keys are trimmed: a stray space or newline pasted into a dashboard breaks auth.
 const env = (name: string) => process.env[name]?.trim() || undefined;
+const GEMINI_KEY = env("GEMINI_API_KEY");
+// "-latest" aliases always point to Google's newest Flash models. Popular models
+// return 503 "high demand" at busy times, so the others are tried next.
+// Lite first: in testing it answered in seconds with equally good questions, while
+// the full Flash model was often busy (timeouts / 503).
+const GEMINI_MODELS = [...new Set([env("GEMINI_MODEL") ?? "gemini-flash-lite-latest", "gemini-flash-latest"])];
 const GROQ_KEY = env("GROQ_API_KEY");
 // Groq answers in seconds; if the first model is busy, the second is tried.
 const GROQ_MODELS = [...new Set([env("GROQ_MODEL") ?? "openai/gpt-oss-120b", "qwen/qwen3.8-27b"])];
@@ -31,6 +39,7 @@ interface Provider {
 // Built lazily: the ask functions are declared further down this file.
 function configuredProviders(): Provider[] {
   return [
+    ...(GEMINI_KEY ? GEMINI_MODELS.map((model) => ({ name: `gemini ${model}`, ask: (p: string) => askGemini(p, model) })) : []),
     ...(GROQ_KEY ? GROQ_MODELS.map((model) => ({ name: `groq ${model}`, ask: (p: string) => askGroq(p, model) })) : []),
     ...OPENROUTER_KEYS.map((key, i) => ({ name: `openrouter #${i + 1}`, ask: (p: string) => askOpenRouter(p, key) })),
     ...(anthropic ? [{ name: "anthropic", ask: askClaude }] : [])
@@ -39,6 +48,7 @@ function configuredProviders(): Provider[] {
 
 /** Names of the AIs that will be tried, in order (for the startup log). */
 export const aiProviders: string[] = [
+  ...(GEMINI_KEY ? GEMINI_MODELS.map((m) => `gemini ${m}`) : []),
   ...(GROQ_KEY ? GROQ_MODELS.map((m) => `groq ${m}`) : []),
   ...OPENROUTER_KEYS.map((_, i) => `openrouter #${i + 1}`),
   ...(anthropic ? ["anthropic"] : [])
@@ -182,8 +192,50 @@ export function cleanQuestions(raw: string[], avoid: readonly string[], count: n
   const avoidSet = new Set(avoid.map((q) => q.toLowerCase()));
   return raw
     .map((q) => q.trim())
-    .filter((q) => q.length > 5 && q.length <= 200 && !avoidSet.has(q.toLowerCase()))
+    .filter((q) => q.length > 5 && q.length <= 200 && !avoidSet.has(q.toLowerCase()) && !isVulgar(q))
     .slice(0, count);
+}
+
+interface GeminiResponse {
+  candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] }; finishReason?: string }[];
+  promptFeedback?: { blockReason?: string };
+}
+
+/** The request body for Gemini's generateContent, asking for {"questions": [...]} JSON. */
+export function geminiRequest(prompt: string) {
+  return {
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    generationConfig: {
+      temperature: 1, // more varied wording between rounds
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: "OBJECT",
+        properties: { questions: { type: "ARRAY", items: { type: "STRING" } } },
+        required: ["questions"]
+      }
+    }
+  };
+}
+
+/** Joins the answer text of a Gemini response, skipping any "thought" parts. */
+export function geminiText(data: GeminiResponse): string {
+  if (data.promptFeedback?.blockReason) throw new Error(`Gemini blocked the prompt (${data.promptFeedback.blockReason})`);
+  const parts = data.candidates?.[0]?.content?.parts ?? [];
+  return parts
+    .filter((p) => !p.thought)
+    .map((p) => p.text ?? "")
+    .join("");
+}
+
+async function askGemini(prompt: string, model: string): Promise<string> {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+    method: "POST",
+    headers: { "x-goog-api-key": GEMINI_KEY ?? "", "Content-Type": "application/json" },
+    body: JSON.stringify(geminiRequest(prompt)),
+    signal: AbortSignal.timeout(15_000) // a busy model hands over to the next one quickly
+  });
+  if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  return geminiText((await res.json()) as GeminiResponse);
 }
 
 async function askGroq(prompt: string, model: string): Promise<string> {

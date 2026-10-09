@@ -28,7 +28,7 @@ has 10 questions, and questions never repeat within a room.
 | Frontend | React 19, TypeScript, Vite; Canvas share card; Web Audio sound; self-hosted fonts; game screens code-split |
 | Backend | Node, Express, Socket.IO (typed events), TypeScript bundled with esbuild |
 | Shared | One set of types and game rules (`shared/`) used by both client and server |
-| AI | Groq, OpenRouter or Anthropic Claude, with an offline question bank (themed scenario questions for every theme) as fallback |
+| AI | Google Gemini, Groq, OpenRouter or Anthropic Claude, with an offline question bank (themed scenario questions for every theme) as fallback |
 | Data | Upstash Redis (REST) for stats, optional GoatCounter for visits |
 | Quality | ESLint, `tsc --strict`, Vitest unit + socket integration tests, Playwright E2E (desktop + mobile) with axe accessibility scans, GitHub Actions CI |
 
@@ -87,6 +87,7 @@ Render reads `render.yaml`: it runs `npm ci && npm run build`, then `npm start`.
 
 | Variable | What it does |
 |---|---|
+| `GEMINI_API_KEY` | AI questions via Google Gemini (`gemini-flash-lite-latest`, then `gemini-flash-latest`; change the first with `GEMINI_MODEL`). |
 | `GROQ_API_KEY` | AI questions via Groq: fast open models (`openai/gpt-oss-120b`, then `qwen/qwen3.8-27b`; change the first with `GROQ_MODEL`). |
 | `OPENROUTER_API_KEY`, `OPENROUTER_API_KEY_2` | AI questions via OpenRouter (defaults to free models; change with `OPENROUTER_MODEL`). |
 | `ANTHROPIC_API_KEY` | AI questions via Claude (paid; change model with `CLAUDE_MODEL`, default `claude-opus-5-5`). |
@@ -94,7 +95,7 @@ Render reads `render.yaml`: it runs `npm ci && npm run build`, then `npm start`.
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Keep stats permanently (free Redis at upstash.com). Without them, stats reset when the server sleeps. |
 | `GOATCOUNTER_CODE` | Count visitors with GoatCounter, e.g. `whoinroom`. |
 
-Every AI with a key is tried in this order (Groq → OpenRouter → Claude) until one answers; only then are built-in questions used. Each failure is logged with its reason. Never put keys in the code or commit them.
+Every AI with a key is tried in this order (Gemini → Groq → OpenRouter → Claude) until one answers; only then are built-in questions used. Each failure is logged with its reason. Never put keys in the code or commit them.
 
 **Free-plan notes:** the server sleeps after 15 minutes with no visitors, and the first
 visitor then waits about 30–60 seconds. Rooms live in memory on one server, so a restart ends

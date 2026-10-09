@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cleanName, pickHighlights, pointsForRank, tallyVotes, type VoteRecord } from "../shared/rules";
+import { cleanName, isVulgar, pickHighlights, pointsForRank, tallyVotes, type VoteRecord } from "../shared/rules";
 
 const players = [
   { id: "a", name: "Aarav" },
@@ -10,6 +10,21 @@ const players = [
 const nameOf = (id: string) => players.find((p) => p.id === id)?.name ?? "?";
 const votes = (entries: [voter: string, target: string, at: number][]) =>
   new Map<string, VoteRecord>(entries.map(([v, t, at]) => [v, { targetId: t, at }]));
+
+describe("isVulgar", () => {
+  it("catches vulgar English and Hindi slang", () => {
+    expect(isVulgar("Apne hi roommate ki backchodi kiske laptop par save padi hai?")).toBe(true);
+    expect(isVulgar("Who is the biggest chutiya here?")).toBe(true);
+    expect(isVulgar("Who said BC in front of their mom?")).toBe(true);
+  });
+
+  it("leaves normal words that merely contain those letters alone", () => {
+    expect(isVulgar("Who would move to Essex on a whim?")).toBe(false);
+    expect(isVulgar("Kaun shaadi mein sabse pehle nachega?")).toBe(false);
+    expect(isVulgar("Who is the most sexist… no wait, the most organised?")).toBe(false);
+    expect(isVulgar("Who still has their old Dickens books?")).toBe(false);
+  });
+});
 
 describe("pointsForRank", () => {
   it("gives 1000 to the fastest and 150 less to each next player", () => {
@@ -80,5 +95,13 @@ describe("pickHighlights", () => {
       { text: "strong", winners: ["C"], topVotes: 3, totalVotes: 4 }
     ]);
     expect(h.map((x) => x.text)).toEqual(["unanimous", "strong"]);
+  });
+});
+
+describe("isVulgar false positives", () => {
+  it("allows everyday Hinglish and party words", () => {
+    expect(isVulgar("Kaun sabse pehle group chat chod dega?")).toBe(false);
+    expect(isVulgar("Who would be the MC at the wedding?")).toBe(false);
+    expect(isVulgar("Kaun sabse kamina dost hai?")).toBe(false);
   });
 });

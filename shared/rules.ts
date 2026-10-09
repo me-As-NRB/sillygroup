@@ -7,6 +7,15 @@ export const MAX_NAME_LENGTH = 20;
 export const MAX_CONTEXT_LENGTH = 300;
 export const TIMER_CHOICES = [15, 20, 30] as const;
 
+// Personal is fine, vulgar is not: AI questions containing any of these are dropped.
+// "chod" alone is left out: Hinglish uses it for "leave" (chod do). "MC" can mean a host.
+const VULGAR =
+  /\b(sex|sexy|sexual|nude|naked|boobs?|fuck\w*|shit\w*|bitch\w*|asshole|dick|pussy|horny|porn\w*|chutiy\w*|bhenchod|behenchod|madarchod|backchod\w*|bakchod\w*|gaand\w*|lund|lauda|randi|bsdk|bc)\b/i;
+
+export function isVulgar(text: string): boolean {
+  return VULGAR.test(text);
+}
+
 /** Points for the n-th fastest correct guess (0-based): 1000, 850, 700 … floor of 100. */
 export function pointsForRank(rank: number): number {
   return Math.max(100, 1000 - rank * 150);

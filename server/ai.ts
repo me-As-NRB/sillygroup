@@ -2,24 +2,31 @@ import Anthropic from "@anthropic-ai/sdk";
 import { isVulgar } from "../shared/rules";
 import type { LanguageId, ModeId, ToneId } from "../shared/types";
 
-// Every AI whose key is set is used, in this order; if one fails (bad key, rate
-// limit, outage, too slow) the next is tried, and only then the built-in questions.
-//   GEMINI_API_KEY                       -> Google Gemini (gemini-flash-latest)
-//   GROQ_API_KEY                         -> Groq (fast open models)
-//   OPENROUTER_API_KEY, OPENROUTER_API_KEY_2 -> OpenRouter (free models)
-//   ANTHROPIC_API_KEY                    -> Claude via Anthropic's API
+// Every AI whose key is set is tried, in this order, until one answers; only
+// then are the built-in questions used. Extra keys of the same service are
+// fallbacks (e.g. when one key's free daily quota runs out).
+//   GEMINI_API_KEY, GEMINI_API_KEY_2 … _5     -> Google Gemini
+//   GROQ_API_KEY,   GROQ_API_KEY_2   … _4     -> Groq (fast open models)
+//   OPENROUTER_API_KEY, OPENROUTER_API_KEY_2  -> OpenRouter (free models)
+//   ANTHROPIC_API_KEY                         -> Claude via Anthropic's API
 // Keys are trimmed: a stray space or newline pasted into a dashboard breaks auth.
 const env = (name: string) => process.env[name]?.trim() || undefined;
-const GEMINI_KEY = env("GEMINI_API_KEY");
-// "-latest" aliases always point to Google's newest Flash models. Popular models
-// return 503 "high demand" at busy times, so the others are tried next.
-// Lite first: in testing it answered in seconds with equally good questions, while
-// the full Flash model was often busy (timeouts / 503).
+
+/** NAME, NAME_2 … NAME_<max>, skipping unset ones and duplicates. */
+function keys(name: string, max: number): string[] {
+  const names = [name, ...Array.from({ length: max - 1 }, (_, i) => `${name}_${i + 2}`)];
+  return [...new Set(names.map(env).filter((k): k is string => Boolean(k)))];
+}
+
+const GEMINI_KEYS = keys("GEMINI_API_KEY", 5);
+// "-latest" aliases always point to Google's newest Flash models. Lite first: in
+// testing it answered in seconds with equally good questions, while the full Flash
+// model was often busy (timeouts / 503).
 const GEMINI_MODELS = [...new Set([env("GEMINI_MODEL") ?? "gemini-flash-lite-latest", "gemini-flash-latest"])];
-const GROQ_KEY = env("GROQ_API_KEY");
+const GROQ_KEYS = keys("GROQ_API_KEY", 4);
 // Groq answers in seconds; if the first model is busy, the second is tried.
 const GROQ_MODELS = [...new Set([env("GROQ_MODEL") ?? "openai/gpt-oss-120b", "qwen/qwen3.8-27b"])];
-const OPENROUTER_KEYS = [env("OPENROUTER_API_KEY"), env("OPENROUTER_API_KEY_2")].filter((k): k is string => Boolean(k));
+const OPENROUTER_KEYS = keys("OPENROUTER_API_KEY", 2);
 // Free models get rate-limited or slow at random, so OpenRouter tries these in order
 // within one request; "openrouter/free" (any free model) is the last resort.
 const OPENROUTER_MODELS = [
@@ -31,26 +38,36 @@ const OPENROUTER_MODELS = [
 const CLAUDE_MODEL = env("CLAUDE_MODEL") || "claude-opus-5-5";
 const anthropic = env("ANTHROPIC_API_KEY") ? new Anthropic({ apiKey: env("ANTHROPIC_API_KEY") }) : null;
 
-interface Provider {
+export interface Provider {
   name: string;
+  /** Attempts sharing a model: if that model is overloaded, the rest are skipped. */
+  model?: string;
   ask: (prompt: string) => Promise<string>;
 }
 
+/** "#2" style suffix, only when a service has more than one key. */
+const nth = (list: unknown[], i: number) => (list.length > 1 ? ` #${i + 1}` : "");
+
 // Built lazily: the ask functions are declared further down this file.
+// Each model is tried with every key before moving to the next model.
 function configuredProviders(): Provider[] {
   return [
-    ...(GEMINI_KEY ? GEMINI_MODELS.map((model) => ({ name: `gemini ${model}`, ask: (p: string) => askGemini(p, model) })) : []),
-    ...(GROQ_KEY ? GROQ_MODELS.map((model) => ({ name: `groq ${model}`, ask: (p: string) => askGroq(p, model) })) : []),
-    ...OPENROUTER_KEYS.map((key, i) => ({ name: `openrouter #${i + 1}`, ask: (p: string) => askOpenRouter(p, key) })),
+    ...GEMINI_MODELS.flatMap((model) =>
+      GEMINI_KEYS.map((key, i) => ({ name: `gemini${nth(GEMINI_KEYS, i)} ${model}`, model: `gemini ${model}`, ask: (p: string) => askGemini(p, model, key) }))
+    ),
+    ...GROQ_MODELS.flatMap((model) =>
+      GROQ_KEYS.map((key, i) => ({ name: `groq${nth(GROQ_KEYS, i)} ${model}`, model: `groq ${model}`, ask: (p: string) => askGroq(p, model, key) }))
+    ),
+    ...OPENROUTER_KEYS.map((key, i) => ({ name: `openrouter${nth(OPENROUTER_KEYS, i)}`, ask: (p: string) => askOpenRouter(p, key) })),
     ...(anthropic ? [{ name: "anthropic", ask: askClaude }] : [])
   ];
 }
 
-/** Names of the AIs that will be tried, in order (for the startup log). */
+/** Summary of what will be tried, in order (for the startup log). */
 export const aiProviders: string[] = [
-  ...(GEMINI_KEY ? GEMINI_MODELS.map((m) => `gemini ${m}`) : []),
-  ...(GROQ_KEY ? GROQ_MODELS.map((m) => `groq ${m}`) : []),
-  ...OPENROUTER_KEYS.map((_, i) => `openrouter #${i + 1}`),
+  ...GEMINI_MODELS.map((m) => `gemini ${m} (${GEMINI_KEYS.length} key${GEMINI_KEYS.length === 1 ? "" : "s"})`).filter(() => GEMINI_KEYS.length > 0),
+  ...GROQ_MODELS.map((m) => `groq ${m} (${GROQ_KEYS.length} key${GROQ_KEYS.length === 1 ? "" : "s"})`).filter(() => GROQ_KEYS.length > 0),
+  ...(OPENROUTER_KEYS.length ? [`openrouter (${OPENROUTER_KEYS.length} key${OPENROUTER_KEYS.length === 1 ? "" : "s"})`] : []),
   ...(anthropic ? ["anthropic"] : [])
 ];
 export const aiEnabled = aiProviders.length > 0;
@@ -227,10 +244,10 @@ export function geminiText(data: GeminiResponse): string {
     .join("");
 }
 
-async function askGemini(prompt: string, model: string): Promise<string> {
+async function askGemini(prompt: string, model: string, key: string): Promise<string> {
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: "POST",
-    headers: { "x-goog-api-key": GEMINI_KEY ?? "", "Content-Type": "application/json" },
+    headers: { "x-goog-api-key": key, "Content-Type": "application/json" },
     body: JSON.stringify(geminiRequest(prompt)),
     signal: AbortSignal.timeout(15_000) // a busy model hands over to the next one quickly
   });
@@ -238,10 +255,10 @@ async function askGemini(prompt: string, model: string): Promise<string> {
   return geminiText((await res.json()) as GeminiResponse);
 }
 
-async function askGroq(prompt: string, model: string): Promise<string> {
+async function askGroq(prompt: string, model: string, key: string): Promise<string> {
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
-    headers: { Authorization: `Bearer ${GROQ_KEY}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       model,
       messages: [{ role: "user", content: prompt }],
@@ -322,19 +339,30 @@ export async function generateQuestions(opts: GenerateOptions): Promise<string[]
  * an empty answer is logged and the next provider is tried; [] when all fail.
  */
 export async function tryProviders(
-  providers: { name: string; ask: (prompt: string) => Promise<string> }[],
+  providers: Provider[],
   prompt: string,
   toQuestions: (text: string) => string[],
   log: (message: string) => void = (m) => console.error(m)
 ): Promise<string[]> {
-  for (const { name, ask } of providers) {
+  // A model that is overloaded or timing out is busy for every key, so trying it
+  // again with the next key would only keep players waiting: skip it instead.
+  const overloaded = new Set<string>();
+  for (const { name, model, ask } of providers) {
+    if (model && overloaded.has(model)) continue;
     try {
       const questions = toQuestions(await ask(prompt));
       if (questions.length) return questions;
       log(`AI question generation returned nothing usable (${name}); trying the next option`);
     } catch (err) {
-      log(`AI question generation failed (${name}): ${err instanceof Error ? err.message : String(err)}`);
+      const message = err instanceof Error ? err.message : String(err);
+      log(`AI question generation failed (${name}): ${message}`);
+      if (model && isModelOverloaded(message)) overloaded.add(model);
     }
   }
   return [];
+}
+
+/** Busy-model errors (as opposed to per-key ones like a bad key or used-up quota). */
+export function isModelOverloaded(message: string): boolean {
+  return /timeout|aborted| 503\b|UNAVAILABLE|high demand|overloaded/i.test(message);
 }

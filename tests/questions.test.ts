@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPrompt, cleanQuestions, parseQuestions, tryProviders } from "../server/ai";
+import { buildPrompt, cleanQuestions, isModelOverloaded, parseQuestions, tryProviders } from "../server/ai";
 import {
   GENRE_BANK,
   HINGLISH_BANK,
@@ -218,5 +218,51 @@ describe("AI providers", () => {
   it("returns nothing when every provider fails, so built-in questions are used", async () => {
     const result = await tryProviders([{ name: "a", ask: async () => { throw new Error("down"); } }], "p", toQuestions, () => {});
     expect(result).toEqual([]);
+  });
+});
+
+describe("multiple keys per AI", () => {
+  const ok = '{"questions":["Who is late?"]}';
+  const fail = (msg: string) => async () => {
+    throw new Error(msg);
+  };
+
+  it("moves to the next key when a key is invalid or out of quota", async () => {
+    const tried: string[] = [];
+    const track = (name: string, ask: () => Promise<string>) => ({ name, model: "gemini lite", ask: () => (tried.push(name), ask()) });
+    const result = await tryProviders(
+      [track("key 1", fail("Gemini 429: quota exceeded")), track("key 2", fail("Gemini 400: API key not valid")), track("key 3", async () => ok)],
+      "p",
+      parseQuestions,
+      () => {}
+    );
+    expect(result).toEqual(["Who is late?"]);
+    expect(tried).toEqual(["key 1", "key 2", "key 3"]);
+  });
+
+  it("skips the other keys of a model that is overloaded, and moves to the next model", async () => {
+    const tried: string[] = [];
+    const p = (name: string, model: string, ask: () => Promise<string>) => ({ name, model, ask: () => (tried.push(name), ask()) });
+    const result = await tryProviders(
+      [
+        p("key 1 lite", "lite", fail("Gemini 503: This model is currently experiencing high demand")),
+        p("key 2 lite", "lite", async () => ok),
+        p("key 1 flash", "flash", fail("The operation was aborted due to timeout")),
+        p("key 2 flash", "flash", async () => ok),
+        p("groq", "groq", async () => ok)
+      ],
+      "p",
+      parseQuestions,
+      () => {}
+    );
+    expect(result).toEqual(["Who is late?"]);
+    expect(tried).toEqual(["key 1 lite", "key 1 flash", "groq"]);
+  });
+
+  it("tells busy-model errors apart from per-key errors", () => {
+    expect(isModelOverloaded("Gemini 503: high demand")).toBe(true);
+    expect(isModelOverloaded("The operation was aborted due to timeout")).toBe(true);
+    expect(isModelOverloaded("Gemini 429: quota exceeded")).toBe(false);
+    expect(isModelOverloaded("Groq 401: Invalid API Key")).toBe(false);
   });
 });

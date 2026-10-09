@@ -87,15 +87,15 @@ Render reads `render.yaml`: it runs `npm ci && npm run build`, then `npm start`.
 
 | Variable | What it does |
 |---|---|
-| `GEMINI_API_KEY` | AI questions via Google Gemini (`gemini-flash-lite-latest`, then `gemini-flash-latest`; change the first with `GEMINI_MODEL`). |
-| `GROQ_API_KEY` | AI questions via Groq: fast open models (`openai/gpt-oss-120b`, then `qwen/qwen3.8-27b`; change the first with `GROQ_MODEL`). |
+| `GEMINI_API_KEY` (+ `_2` … `_5`) | AI questions via Google Gemini (`gemini-flash-lite-latest`, then `gemini-flash-latest`; change the first with `GEMINI_MODEL`). |
+| `GROQ_API_KEY` (+ `_2` … `_4`) | AI questions via Groq: fast open models (`openai/gpt-oss-120b`, then `qwen/qwen3.8-27b`; change the first with `GROQ_MODEL`). |
 | `OPENROUTER_API_KEY`, `OPENROUTER_API_KEY_2` | AI questions via OpenRouter (defaults to free models; change with `OPENROUTER_MODEL`). |
 | `ANTHROPIC_API_KEY` | AI questions via Claude (paid; change model with `CLAUDE_MODEL`, default `claude-opus-5-5`). |
 | `STATS_KEY` | Secret phrase for your private stats page at `/stats?key=<STATS_KEY>`. |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Keep stats permanently (free Redis at upstash.com). Without them, stats reset when the server sleeps. |
 | `GOATCOUNTER_CODE` | Count visitors with GoatCounter, e.g. `whoinroom`. |
 
-Every AI with a key is tried in this order (Gemini → Groq → OpenRouter → Claude) until one answers; only then are built-in questions used. Each failure is logged with its reason. Never put keys in the code or commit them.
+Every AI with a key is tried in this order (Gemini → Groq → OpenRouter → Claude) until one answers; only then are built-in questions used. Extra keys (`_2`, `_3`…) are fallbacks for the same service: each model is tried with every key before the next model, except that an overloaded or timing-out model is skipped for the remaining keys. Each failure is logged with its reason. Never put keys in the code or commit them.
 
 **Free-plan notes:** the server sleeps after 15 minutes with no visitors, and the first
 visitor then waits about 30–60 seconds. Rooms live in memory on one server, so a restart ends

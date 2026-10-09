@@ -2,7 +2,7 @@
 // truth; clients receive a GameState snapshot after every change.
 
 export type Phase = "lobby" | "loading" | "question" | "reveal" | "final";
-export type ToneId = "friendly" | "blunt" | "savage";
+export type ToneId = "blunt" | "savage";
 export type LanguageId = "hinglish" | "en";
 export type ModeId = "friends" | "couple";
 

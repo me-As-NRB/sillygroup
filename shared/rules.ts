@@ -1,6 +1,6 @@
 import type { Highlight, PlayerRef, TallyEntry } from "./types";
 
-export const QUESTIONS_PER_ROUND = 12;
+export const QUESTIONS_PER_ROUND = 10;
 export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 20;
 export const MAX_NAME_LENGTH = 20;

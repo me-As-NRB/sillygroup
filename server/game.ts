@@ -23,7 +23,7 @@ import type {
 } from "../shared/types";
 import type { GenerateOptions } from "./ai";
 import { pickFromBank } from "./questions";
-import { pickDiverse, sampleAngles, type HostHistory } from "./variety";
+import { pickDiverse, sampleAngles, themeTopics, type HostHistory } from "./variety";
 
 export { HostHistory } from "./variety";
 import type { Tracker } from "./stats";
@@ -91,7 +91,7 @@ export class Room {
   readonly players = new Map<string, Player>();
   hostId: string | null = null;
   phase: Phase = "lobby";
-  settings: Settings = { timer: 20, genres: [], context: "", tone: "blunt", language: "hinglish", mode: "friends" };
+  settings: Settings = { timer: 20, genres: [], context: "", tone: "savage", language: "hinglish", mode: "friends" };
   emptySince: number | null = null;
 
   private questions: string[] = [];
@@ -303,7 +303,9 @@ export class Room {
 
     // Couple rounds are about the two partners; anything addressed to a group doesn't fit.
     const fitting = mode === "couple" ? aiQuestions.filter((q) => !/\b(group|everyone|sab log)\b/i.test(q)) : aiQuestions;
-    let questions = pickDiverse(fitting, seen, QUESTIONS_PER_ROUND);
+    // The theme itself may repeat (every Trek question is about travel); other topics may not.
+    const exempt = themeTopics(genres);
+    let questions = pickDiverse(fitting, seen, QUESTIONS_PER_ROUND, [], exempt);
     const fromAi = questions.length;
     tracker.track(fromAi >= QUESTIONS_PER_ROUND / 2 ? "rounds_ai" : "rounds_backup");
     this.log(
@@ -325,12 +327,12 @@ export class Room {
       // Top up from the backup questions: still one question per topic across the whole round.
       const avoid = [...seen, ...questions];
       const candidates = pickFromBank(80, avoid, bank);
-      questions = [...questions, ...pickDiverse(candidates, avoid, QUESTIONS_PER_ROUND - questions.length, questions)];
+      questions = [...questions, ...pickDiverse(candidates, avoid, QUESTIONS_PER_ROUND - questions.length, questions, exempt)];
     }
     if (questions.length < QUESTIONS_PER_ROUND) {
       // Running low: allow a repeated topic, but still no reworded repeats.
       const avoid = [...seen, ...questions];
-      questions = [...questions, ...pickDiverse(pickFromBank(80, avoid, bank), avoid, QUESTIONS_PER_ROUND - questions.length)];
+      questions = [...questions, ...pickDiverse(pickFromBank(80, avoid, bank), avoid, QUESTIONS_PER_ROUND - questions.length, [], exempt)];
     }
     if (questions.length < QUESTIONS_PER_ROUND) {
       // Nearly everything has been played already: allow similar ones rather than a short round.

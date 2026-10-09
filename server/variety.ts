@@ -145,17 +145,46 @@ export function topicsOf(question: string): string[] {
   return TOPICS.filter(([, re]) => re.test(question)).map(([name]) => name);
 }
 
+// Topics every question of a theme naturally shares. They must not count as
+// repeats, or a Trek round could only ever keep one trek question.
+const THEME_TOPICS: Readonly<Record<string, readonly string[]>> = {
+  trip: ["travel"], trek: ["travel"], roadtrip: ["travel"], beach: ["travel"], camping: ["travel"],
+  party: ["parties"], nightout: ["parties"], bachelor: ["parties"], newyear: ["parties"], birthday: ["parties"],
+  wedding: ["parties", "family"], festivals: ["family"],
+  office: ["work"], wfh: ["work"], teamouting: ["work"], startup: ["work"],
+  college: ["work"], hostel: ["work"], school: ["work"], exams: ["work"],
+  movies: ["movies"], bollywood: ["movies"], ott: ["movies"], music: ["movies"], dance: ["parties", "movies"],
+  gym: ["fitness"], sports: ["fitness"], cricket: ["fitness"], football: ["fitness"],
+  food: ["food"], cooking: ["food"],
+  dating: ["romance", "exes"], relationships: ["romance", "exes"],
+  family: ["family"], cousins: ["family"],
+  socialmedia: ["phone"], tech: ["phone"], shopping: ["money"], secrets: ["lies"]
+};
+
+/** Topics that the chosen theme(s) make unavoidable, so they are exempt from the one-per-round rule. */
+export function themeTopics(genreIds: readonly string[]): Set<string> {
+  return new Set(genreIds.flatMap((g) => THEME_TOPICS[g] ?? []));
+}
+
 /**
  * Keeps candidates in order, dropping any too similar to `avoid` or to ones
  * already kept, and any that share a topic with a question already kept.
+ * Topics in `exempt` (the round's theme) may repeat freely.
  */
-export function pickDiverse(candidates: readonly string[], avoid: readonly string[], count: number, taken: readonly string[] = []): string[] {
+export function pickDiverse(
+  candidates: readonly string[],
+  avoid: readonly string[],
+  count: number,
+  taken: readonly string[] = [],
+  exempt: ReadonlySet<string> = new Set()
+): string[] {
   const kept: string[] = [];
-  const usedTopics = new Set(taken.flatMap(topicsOf));
+  const topicsOf_ = (q: string) => topicsOf(q).filter((t) => !exempt.has(t));
+  const usedTopics = new Set(taken.flatMap(topicsOf_));
   for (const q of candidates) {
     if (kept.length >= count) break;
     if (avoid.some((a) => tooSimilar(q, a)) || kept.some((k) => tooSimilar(q, k))) continue;
-    const topics = topicsOf(q);
+    const topics = topicsOf_(q);
     if (topics.some((t) => usedTopics.has(t))) continue;
     kept.push(q);
     for (const t of topics) usedTopics.add(t);

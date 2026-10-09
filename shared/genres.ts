@@ -69,7 +69,6 @@ export const GENRES: readonly Genre[] = [
 ];
 
 export const TONES: readonly Tone[] = [
-  { id: "friendly", emoji: "😊", label: "Friendly", hint: "Wholesome, everyone laughs" },
   { id: "blunt", emoji: "😏", label: "Blunt", hint: "Direct and specific" },
   { id: "savage", emoji: "🔥", label: "Savage", hint: "Personal, exposing, no mercy" }
 ];

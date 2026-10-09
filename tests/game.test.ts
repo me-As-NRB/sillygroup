@@ -5,8 +5,8 @@ import { DEFAULT_TIMINGS, HostHistory, Room, RoomManager, type GameDeps } from "
 /** The game asks the AI for this many, then keeps the most varied QUESTIONS_PER_ROUND. */
 const AI_ASK = QUESTIONS_PER_ROUND + 6;
 import type { GenerateOptions } from "../server/ai";
-import { COUPLE_GENRE_BANK, GENRE_BANK } from "../server/questions";
-import { topicsOf } from "../server/variety";
+import { COUPLE_GENRE_BANK, GENRE_BANK, HINGLISH_GENRE_BANK } from "../server/questions";
+import { themeTopics, topicsOf } from "../server/variety";
 import type { Tracker } from "../server/stats";
 
 function makeDeps(overrides: Partial<GameDeps> = {}): GameDeps & { tracker: Tracker & { calls: string[] } } {
@@ -77,8 +77,9 @@ describe("joining", () => {
 describe("host settings", () => {
   it("only lets the host change settings, and validates them", () => {
     const { room, ids } = setup(3);
-    room.updateSettings(ids[1], { tone: "savage" });
-    expect(room.settings.tone).toBe("blunt");
+    expect(room.settings.tone).toBe("savage"); // default
+    room.updateSettings(ids[1], { tone: "blunt" });
+    expect(room.settings.tone).toBe("savage"); // not the host
 
     expect(room.settings.language).toBe("hinglish"); // default
     room.updateSettings(ids[0], {
@@ -224,14 +225,14 @@ describe("a full round", () => {
   it("uses AI questions and tops up from the bank when the AI returns too few", async () => {
     const generateQuestions = vi.fn(async () => ["Who would win a staring contest?", "Who hums all day?"]);
     const { room, ids } = setup(3, makeDeps({ generateQuestions }));
-    room.updateSettings(ids[0], { genres: ["trek"], tone: "friendly", context: "Manali" });
+    room.updateSettings(ids[0], { genres: ["trek"], tone: "blunt", context: "Manali" });
     await startAndWait(room, ids[0]);
 
     expect(generateQuestions).toHaveBeenCalledWith(
       expect.objectContaining({
         count: AI_ASK, // extras, so the most varied ones can be kept
         genres: ["Trek & Hiking"],
-        tone: "friendly",
+        tone: "blunt",
         language: "hinglish",
         context: "Manali",
         playerCount: 3
@@ -291,16 +292,53 @@ describe("question variety", () => {
     { mode: "friends", tone: "savage", language: "hinglish", genres: ["trek"] },
     { mode: "friends", tone: "blunt", language: "en", genres: [] },
     { mode: "couple", tone: "savage", language: "hinglish", genres: ["trip"] },
-    { mode: "couple", tone: "friendly", language: "en", genres: [] }
+    { mode: "couple", tone: "blunt", language: "en", genres: [] }
   ] as const)("keeps every round on distinct topics for 3 rounds: $mode/$tone/$language", async (cfg) => {
     const { room, ids } = setup(2);
     room.updateSettings(ids[0], { ...cfg, genres: [...cfg.genres] });
     for (let round = 0; round < 3; round++) {
       const texts = await playRound(room, ids);
       expect(texts).toHaveLength(QUESTIONS_PER_ROUND);
-      const topics = texts.flatMap(topicsOf);
+      // The theme's own topic (e.g. travel for Trek) may repeat; no other topic may.
+      const exempt = themeTopics(cfg.genres);
+      const topics = texts.flatMap(topicsOf).filter((t) => !exempt.has(t));
       expect(new Set(topics).size).toBe(topics.length);
     }
+  });
+
+  it("keeps every AI question about the chosen theme (the theme isn't a 'repeat')", async () => {
+    const trek = [
+      "Who forgets their bag halfway up the trek?",
+      "Agar trek pe raasta bhatak jaayein, kaun sabse pehle panic karega?",
+      "Who takes 200 photos on the trek and zero steps?",
+      "Trek pe Maggi point dekhte hi kaun ruk jaayega?",
+      "If the trek guide quit, who would lead us off a cliff?",
+      "Who complains the most on the first uphill of the trek?",
+      "Kaun trek pe sabse zyada kharrate maarega tent mein?",
+      "If the trek had no network, who'd survive the longest?",
+      "Who packs a hair dryer for a trek?",
+      "Summit pe pahunchte hi sabse pehle story kaun daalega?"
+    ];
+    const { room, ids } = setup(3, makeDeps({ generateQuestions: async () => trek }));
+    room.updateSettings(ids[0], { genres: ["trek"], language: "hinglish" });
+    await startAndWait(room, ids[0]);
+    const texts: string[] = [];
+    for (let i = 0; i < QUESTIONS_PER_ROUND; i++) {
+      texts.push(room.stateFor(ids[0]).question!.text);
+      for (const id of ids) room.vote(id, ids[0]);
+      vi.advanceTimersByTime(DEFAULT_TIMINGS.revealMs);
+    }
+    // At most a couple dropped for sharing a non-theme topic; the rest stay on theme.
+    expect(texts.filter((q) => trek.includes(q)).length).toBeGreaterThanOrEqual(8);
+  });
+
+  it.each(["hinglish", "en"] as const)("leads a built-in %s round with the theme's questions", async (language) => {
+    const { room, ids } = setup(3);
+    room.updateSettings(ids[0], { genres: ["trek"], language });
+    const texts = await playRound(room, ids);
+    const themed = new Set([...GENRE_BANK.trek, ...HINGLISH_GENRE_BANK.trek]);
+    expect(texts.filter((q) => themed.has(q)).length).toBeGreaterThanOrEqual(4);
+    expect(themed.has(texts[0])).toBe(true);
   });
 
   it("uses couple versions of the theme in couple mode, never friends' theme questions", async () => {

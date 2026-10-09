@@ -1,4 +1,5 @@
 import type { LanguageId, ModeId, ToneId } from "../shared/types";
+import { EXTRA_GENRE_BANK, EXTRA_HINGLISH_GENRE_BANK } from "./themeQuestions";
 
 // Backup question bank, used when no AI key is set or the AI call fails.
 
@@ -639,8 +640,8 @@ export function pickFromBank(count: number, used: readonly string[], options: Ba
   };
 
   const themed = mix(
-    genres.flatMap((g) => HINGLISH_GENRE_BANK[g] ?? []),
-    genres.flatMap((g) => GENRE_BANK[g] ?? [])
+    genres.flatMap((g) => [...(HINGLISH_GENRE_BANK[g] ?? []), ...(EXTRA_HINGLISH_GENRE_BANK[g] ?? [])]),
+    genres.flatMap((g) => [...(GENRE_BANK[g] ?? []), ...(EXTRA_GENRE_BANK[g] ?? [])])
   );
 
   if (mode === "couple") {
@@ -655,7 +656,7 @@ export function pickFromBank(count: number, used: readonly string[], options: Ba
     if (new Set([...coupleThemed, ...spicy, ...couple]).size < count) {
       couple = shuffle([...(hinglish ? COUPLE_HINGLISH_BANK : []), ...COUPLE_BANK], random);
     }
-    const lead = interleave([coupleThemed.slice(0, 4), spicy.length ? spicy : couple]);
+    const lead = interleave([coupleThemed, spicy.length ? spicy : couple]);
     return [...new Set([...lead, ...couple, ...coupleThemed])].slice(0, count);
   }
 
@@ -666,7 +667,7 @@ export function pickFromBank(count: number, used: readonly string[], options: Ba
     general = shuffle([...(hinglish ? HINGLISH_BANK : []), ...QUESTION_BANK], random);
   }
 
-  // Savage rounds: theme and savage questions take turns, so it stays on-theme but spicy.
-  const lead = savage.length ? interleave([themed.slice(0, 5), savage]) : themed;
+  // The chosen theme always leads; in Savage rounds, savage questions fill the gaps.
+  const lead = savage.length ? interleave([themed, savage]) : themed;
   return [...new Set([...lead, ...themed, ...general])].slice(0, count);
 }

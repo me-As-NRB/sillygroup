@@ -26,6 +26,6 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
     // Short reveal so a full 10-question round finishes quickly; no AI in tests.
-    env: { PORT: String(PORT), REVEAL_MS: "2500", OPENROUTER_API_KEY: "", ANTHROPIC_API_KEY: "" }
+    env: { PORT: String(PORT), REVEAL_MS: "2500", GEMINI_API_KEY: "", GROQ_API_KEY: "", OPENROUTER_API_KEY: "", ANTHROPIC_API_KEY: "" }
   }
 });

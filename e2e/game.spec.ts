@@ -103,8 +103,12 @@ test("a couple plays a full round and sees how often they matched", async ({ bro
   await partner.getByRole("button", { name: "Join", exact: true }).click();
 
   await host.getByRole("radio", { name: /Couple/ }).click();
+  // Couples get Blunt (default) or Intimate instead of the friends' Savage.
+  await expect(host.getByRole("radio", { name: /Blunt/ })).toBeChecked();
+  await expect(host.getByRole("radio", { name: /Savage/ })).toHaveCount(0);
+  await host.getByRole("radio", { name: /Intimate/ }).click();
   await host.getByRole("radio", { name: "30s" }).click();
-  await expect(partner.getByText(/Couple mode/).first()).toBeVisible();
+  await expect(partner.getByText(/Couple mode.*Intimate/).first()).toBeVisible();
   // Both screens switch to the romantic palette, and it stays readable.
   for (const p of [host, partner]) await expect(p.locator("html")).toHaveAttribute("data-mode", "couple");
   expect(await seriousA11yIssues(host)).toEqual([]);

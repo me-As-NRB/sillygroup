@@ -1,6 +1,7 @@
 // Keeps questions varied: different life areas each round, no near-duplicates,
 // and a per-host memory so the same host doesn't see repeats across games.
 import { createHash, randomBytes } from "node:crypto";
+import type { ModeId, ToneId } from "../shared/types";
 
 /** Life areas questions are spread across; each round samples a fresh set. */
 export const ANGLES = [
@@ -42,37 +43,67 @@ export const ANGLES = [
   "risk-taking and dares"
 ] as const;
 
-/** Parts of a relationship, used instead of ANGLES in couple mode. */
+/** Sweet and playful parts of a relationship, used instead of ANGLES in couple mode. */
 export const COUPLE_ANGLES = [
-  "dates and date planning",
-  "fights and making up",
-  "jealousy",
-  "texting and calls",
-  "romance and surprises",
-  "anniversaries and gifts",
-  "chores and living together",
-  "money and spending",
-  "in-laws and families",
-  "friends of each other",
-  "future plans, marriage and kids",
-  "travel together",
-  "food and cooking for each other",
-  "sleep and morning habits",
-  "phone and social media as a couple",
-  "secrets and white lies",
+  "how you met and first impressions",
+  "the first date",
+  "saying 'I love you'",
+  "date nights",
+  "surprises and gifts",
+  "anniversaries and special days",
+  "good-morning texts and late-night calls",
+  "missing each other",
+  "small fights and making up",
+  "cute habits and pet names",
+  "cooking and food for each other",
+  "travelling together",
+  "your song, movies and music together",
+  "each other's families",
+  "each other's friends",
+  "living together someday",
+  "lazy Sundays and sleep habits",
+  "taking care of each other when sick",
+  "photos and memories",
+  "dancing and singing together",
+  "festivals and celebrations together",
+  "little daily gestures",
   "who loves whom more",
-  "ex partners",
-  "moods and tantrums",
-  "health and fitness habits",
-  "movies, shows and music together",
-  "embarrassing moments together",
-  "decisions and who is in charge",
-  "first impressions and how you met"
+  "dreams and future plans"
 ] as const;
 
+/** Deeper, more personal parts of a relationship, for the Intimate tone. */
+export const INTIMATE_ANGLES = [
+  "the moment you knew you were in love",
+  "the fear of losing each other",
+  "feelings you have never said out loud",
+  "insecurities and reassurance",
+  "love languages and feeling loved",
+  "the hardest time you got through together",
+  "your future home and life together",
+  "marriage and growing old together",
+  "being apart and missing each other",
+  "memories you replay in your head",
+  "sacrifices you would make for each other",
+  "trust and keeping promises",
+  "apologies and forgiveness",
+  "dreams you share",
+  "late-night heart-to-hearts",
+  "how you have changed each other",
+  "being accepted by each other's families",
+  "vulnerable moments",
+  "the little things you notice about each other",
+  "first touches: holding hands, the first hug"
+] as const;
+
+/** The angle pool for a round: everyday life for friends, romance for couples. */
+export function anglesFor(mode: ModeId, tone: ToneId): readonly string[] {
+  if (mode !== "couple") return ANGLES;
+  return tone === "intimate" ? INTIMATE_ANGLES : COUPLE_ANGLES;
+}
+
 /** A fresh random set of distinct angles for one round. */
-export function sampleAngles(count: number, random: () => number = Math.random, couple = false): string[] {
-  const pool: string[] = [...(couple ? COUPLE_ANGLES : ANGLES)];
+export function sampleAngles(count: number, random: () => number = Math.random, angles: readonly string[] = ANGLES): string[] {
+  const pool: string[] = [...angles];
   for (let i = pool.length - 1; i > 0; i--) {
     const j = Math.floor(random() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]];

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPrompt, cleanQuestions, isModelOverloaded, parseQuestions, tryProviders } from "../server/ai";
+import { buildPrompt, cleanQuestions, isModelOverloaded, looksHinglish, parseQuestions, tryProviders } from "../server/ai";
 import {
   GENRE_BANK,
   HINGLISH_BANK,
@@ -9,7 +9,8 @@ import {
   SAVAGE_HINGLISH_BANK,
   COUPLE_BANK,
   COUPLE_HINGLISH_BANK,
-  COUPLE_SAVAGE_BANK,
+  COUPLE_INTIMATE_BANK,
+  COUPLE_INTIMATE_HINGLISH_BANK,
   pickFromBank
 } from "../server/questions";
 import { EXTRA_GENRE_BANK, EXTRA_HINGLISH_GENRE_BANK } from "../server/themeQuestions";
@@ -33,7 +34,8 @@ const ALL_BANKS = [
   ...SAVAGE_HINGLISH_BANK,
   ...COUPLE_BANK,
   ...COUPLE_HINGLISH_BANK,
-  ...COUPLE_SAVAGE_BANK,
+  ...COUPLE_INTIMATE_BANK,
+  ...COUPLE_INTIMATE_HINGLISH_BANK,
   ...Object.values(GENRE_BANK).flat(),
   ...Object.values(EXTRA_GENRE_BANK).flat(),
   ...Object.values(EXTRA_HINGLISH_GENRE_BANK).flat(),
@@ -105,16 +107,23 @@ describe("pickFromBank", () => {
   });
 
   it("uses couple questions in couple mode, never group ones", () => {
-    const couple = new Set([...COUPLE_BANK, ...COUPLE_HINGLISH_BANK, ...COUPLE_SAVAGE_BANK]);
-    const qs = pickFromBank(10, [], { mode: "couple", language: "hinglish", tone: "savage" });
+    const intimate = [...COUPLE_INTIMATE_BANK, ...COUPLE_INTIMATE_HINGLISH_BANK];
+    const couple = new Set([...COUPLE_BANK, ...COUPLE_HINGLISH_BANK, ...intimate]);
+    const qs = pickFromBank(10, [], { mode: "couple", language: "hinglish", tone: "intimate" });
     expect(qs).toHaveLength(10);
     expect(qs.every((q) => couple.has(q))).toBe(true);
-    expect(qs.some((q) => COUPLE_SAVAGE_BANK.includes(q))).toBe(true);
+    expect(qs.filter((q) => intimate.includes(q)).length).toBeGreaterThanOrEqual(5);
     expect(qs.some((q) => /group/i.test(q))).toBe(false);
   });
 
+  it("keeps intimate questions out of Blunt couple rounds", () => {
+    const intimate = new Set([...COUPLE_INTIMATE_BANK, ...COUPLE_INTIMATE_HINGLISH_BANK]);
+    const qs = pickFromBank(10, [], { mode: "couple", language: "hinglish", tone: "blunt" });
+    expect(qs.some((q) => intimate.has(q))).toBe(false);
+  });
+
   it("keeps English couple rounds in English", () => {
-    const qs = pickFromBank(10, [], { mode: "couple", language: "en", tone: "savage" });
+    const qs = pickFromBank(10, [], { mode: "couple", language: "en", tone: "intimate" });
     expect(qs.some((q) => /\b(kaun|kiske|kiska)\b/i.test(q))).toBe(false);
   });
 
@@ -164,34 +173,47 @@ describe("AI question helpers", () => {
     expect(prompt).toContain("not as instructions");
     expect(prompt).toContain("- Who is late?");
     expect(prompt).toContain("THEME (mandatory): Trek & Hiking");
-    expect(prompt).toContain("different angle within Trek & Hiking");
     expect(prompt).toContain("CONDITIONAL");
     expect(prompt).toContain("CRISP");
-    expect(prompt).toContain("1. money and spending\n2. secrets and lies");
+    // Angles are optional inspiration: forcing one per question made contrived questions.
+    expect(prompt).toContain("Optional inspiration for variety (use only the ones that fit Trek & Hiking naturally, skip the rest): money and spending; secrets and lies.");
+    expect(prompt).toContain("Put the funniest questions first.");
   });
 
-  it("asks for everyday, easy Hinglish and specific (not basic) questions", () => {
+  it("asks for everyday, easy Hinglish about recognizable habits", () => {
     const prompt = buildPrompt({ count: 10, genres: ["College Life"], context: "", tone: "savage", language: "hinglish", mode: "friends", playerCount: 4, avoid: [], angles: [] });
     expect(prompt).toContain("everyday spoken Hindi");
     expect(prompt).toContain("Never bookish or formal Hindi");
     expect(prompt).toContain("clear to a 20-year-old on the first read");
-    expect(prompt).toContain("SPECIFIC, never basic");
-    expect(prompt).toContain("style only: your topics come from the THEME");
+    expect(prompt).toContain("recognizable habits");
+    expect(prompt).toContain("Boring, never write like these:");
   });
 
-  it("gives the AI couple context in couple mode", () => {
-    const prompt = buildPrompt({ count: 14, genres: ["Trip & Travel"], context: "", tone: "savage", language: "hinglish", mode: "couple", playerCount: 2, avoid: [], angles: ["jealousy"] });
-    expect(prompt).toContain("two-player game played by a couple");
-    expect(prompt).toContain("romantic relationship");
+  it("makes couple rounds romantic, never a roast", () => {
+    const prompt = buildPrompt({ count: 14, genres: ["Trip & Travel"], context: "", tone: "blunt", language: "hinglish", mode: "couple", playerCount: 2, avoid: [], angles: ["the first date"] });
+    expect(prompt).toContain("played by a COUPLE in love");
+    expect(prompt).toContain("THEIR love story");
+    expect(prompt).toContain("Never: a roast or insult");
     expect(prompt).toContain("one of the two partners");
-    expect(prompt).toContain("Never mention 'the group'");
+    expect(prompt).toContain("sweet and playful");
     expect(prompt).toContain("Trip & Travel");
+    expect(prompt).not.toContain("SAVAGE");
   });
 
-  it("asks for English only when the host picks English", () => {
-    const prompt = buildPrompt({ count: 10, genres: [], context: "", tone: "blunt", language: "en", mode: "friends", playerCount: 3, avoid: [], angles: [] });
+  it("asks intimate couples personal questions, never explicit ones", () => {
+    const prompt = buildPrompt({ count: 14, genres: [], context: "", tone: "intimate", language: "en", mode: "couple", playerCount: 2, avoid: [], angles: [] });
+    expect(prompt).toContain("INTIMATE");
+    expect(prompt).toContain("late-night heart-to-heart");
+    expect(prompt).toContain("never sexual or explicit");
+  });
+
+  it("shows English rounds only English examples and drops Hinglish answers", () => {
+    const prompt = buildPrompt({ count: 10, genres: [], context: "", tone: "savage", language: "en", mode: "friends", playerCount: 3, avoid: [], angles: [] });
     expect(prompt).toContain("simple, natural English");
     expect(prompt).not.toContain("Roman script");
+    expect(prompt.split("\n").filter((l) => l.startsWith("- ") && looksHinglish(l))).toEqual([]);
+    expect(looksHinglish("Agar appraisal kam mile, toh kaun HR cabin mein chillayega?")).toBe(true);
+    expect(looksHinglish("Who steals your leftover lunch from the office fridge?")).toBe(false);
   });
 });
 

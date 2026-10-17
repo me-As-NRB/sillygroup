@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { MAX_NAME_LENGTH } from "../../../shared/rules";
+import { MAX_NAME_LENGTH, QUESTIONS_PER_ROUND } from "../../../shared/rules";
 import { About } from "../components/About";
 import { useGameApi, useToast } from "../context";
 import { hasJoinedOthers, rememberName, roomFromUrl, savedName } from "../lib/session";
@@ -139,7 +139,7 @@ export function Home() {
         </li>
         <li>
           <b>See who picked whom</b>
-          <span>Fastest right guess scores the most. 12 questions a round.</span>
+          <span>Fastest right guess scores the most. {QUESTIONS_PER_ROUND} questions a round.</span>
         </li>
       </ol>
       <About />

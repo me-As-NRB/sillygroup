@@ -4,6 +4,8 @@ import { DEFAULT_TIMINGS, HostHistory } from "./game";
 import { createStats } from "./stats";
 
 const PORT = Number(process.env.PORT) || 3000;
+// REVEAL_MS lets end-to-end tests run a full round quickly, whatever the group size.
+const REVEAL_MS = Number(process.env.REVEAL_MS) || 0;
 const stats = createStats({
   url: process.env.UPSTASH_REDIS_REST_URL,
   token: process.env.UPSTASH_REDIS_REST_TOKEN
@@ -14,8 +16,7 @@ const server = createGameServer({
     generateQuestions,
     aiEnabled,
     tracker: stats,
-    // REVEAL_MS lets end-to-end tests run a full round quickly.
-    timings: { ...DEFAULT_TIMINGS, revealMs: Number(process.env.REVEAL_MS) || DEFAULT_TIMINGS.revealMs },
+    timings: REVEAL_MS ? { ...DEFAULT_TIMINGS, revealMs: REVEAL_MS, smallGroupRevealMs: REVEAL_MS } : DEFAULT_TIMINGS,
     now: Date.now,
     // One line per game event; read them in Render → your service → Logs.
     log: (line) => console.log(line),

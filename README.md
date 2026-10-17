@@ -9,9 +9,11 @@ fastest gets 1000, then 850, 700, 550, 400, 250, and everyone after that gets 10
 has 10 questions, and questions never repeat within a room.
 
 - The host picks one of 20 themes, can describe the group in their own words, and sets
-  the tone (Friendly / Blunt / Savage). AI writes questions to match.
-- After each question everyone sees who voted for whom.
-- **Couple mode** (2 players): questions about the relationship; you score only when you both
+  the tone (Blunt or Savage, Savage by default). AI writes questions to match.
+- After each question everyone sees who voted for whom; with 2–3 players the next question
+  comes sooner (6 s instead of 10 s).
+- **Couple mode** (2 players): romantic questions about the two of them, Blunt (sweet and
+  playful, the default) or Intimate (personal, never explicit). You score only when you both
   pick the same partner, the screen turns romantic, and the round ends with "You matched on X of 10".
 - Hinglish (default) or English; questions spread across different life areas each round and
   never repeat, even reworded, for the same host; 10 questions per round, each on a different topic.
@@ -87,7 +89,7 @@ Render reads `render.yaml`: it runs `npm ci && npm run build`, then `npm start`.
 
 | Variable | What it does |
 |---|---|
-| `GEMINI_API_KEY` (+ `_2` … `_5`) | AI questions via Google Gemini (`gemini-flash-lite-latest`, then `gemini-flash-latest`; `GEMINI_MODEL=gemini-flash-latest` tries the stronger, slower model first). New Gemini keys start with `AQ.`; older `AIza…` keys are refused by Gemini even when they work for other Google APIs. |
+| `GEMINI_API_KEY` (+ `_2` … `_5`) | AI questions via Google Gemini (`gemini-flash-latest` with a small thinking budget, then the faster `gemini-flash-lite-latest` when it's busy; change the first with `GEMINI_MODEL`). New Gemini keys start with `AQ.`; older `AIza…` keys are refused by Gemini even when they work for other Google APIs. |
 | `GROQ_API_KEY` (+ `_2` … `_4`) | AI questions via Groq: fast open models (`openai/gpt-oss-120b`, then `qwen/qwen3.8-27b`; change the first with `GROQ_MODEL`). |
 | `OPENROUTER_API_KEY`, `OPENROUTER_API_KEY_2` | AI questions via OpenRouter (defaults to free models; change with `OPENROUTER_MODEL`). |
 | `ANTHROPIC_API_KEY` | AI questions via Claude (paid; change model with `CLAUDE_MODEL`, default `claude-opus-5-5`). |

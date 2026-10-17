@@ -21,7 +21,7 @@ beforeAll(async () => {
       generateQuestions: async () => [],
       aiEnabled: false,
       tracker: stats,
-      timings: { ...DEFAULT_TIMINGS, revealMs: 50 },
+      timings: { ...DEFAULT_TIMINGS, revealMs: 50, smallGroupRevealMs: 50 },
       now: Date.now,
       log: () => {},
       questionHistory: new HostHistory()

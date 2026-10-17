@@ -11,6 +11,10 @@ export interface Tone {
   emoji: string;
   label: string;
   hint: string;
+  /** Shown instead of `hint` in couple mode. */
+  coupleHint?: string;
+  /** The modes that offer this tone. */
+  modes: readonly ModeId[];
 }
 
 // Shared by the server (validation, AI prompt) and the browser (genre picker).
@@ -37,10 +41,15 @@ export const GENRES: readonly Genre[] = [
   { id: "secrets", emoji: "🤫", label: "Secrets & Confessions" }
 ];
 
+// Friends choose Blunt or Savage; couples choose Blunt or Intimate.
 export const TONES: readonly Tone[] = [
-  { id: "blunt", emoji: "😏", label: "Blunt", hint: "Direct and specific" },
-  { id: "savage", emoji: "🔥", label: "Savage", hint: "Personal, exposing, no mercy" }
+  { id: "blunt", emoji: "😏", label: "Blunt", hint: "Direct and specific", coupleHint: "Honest, sweet and playful", modes: ["friends", "couple"] },
+  { id: "savage", emoji: "🔥", label: "Savage", hint: "Personal, exposing, no mercy", modes: ["friends"] },
+  { id: "intimate", emoji: "💞", label: "Intimate", hint: "Personal and romantic, never explicit", modes: ["couple"] }
 ];
+
+/** Friends play Savage unless the host changes it; couples play Blunt. */
+export const DEFAULT_TONE: Readonly<Record<ModeId, ToneId>> = { friends: "savage", couple: "blunt" };
 
 export interface Language {
   id: LanguageId;
@@ -79,6 +88,15 @@ export function isModeId(value: unknown): value is ModeId {
 
 export function isToneId(value: unknown): value is ToneId {
   return typeof value === "string" && toneById.has(value as ToneId);
+}
+
+/** The tones offered in a mode, in display order. */
+export function tonesFor(mode: ModeId): Tone[] {
+  return TONES.filter((t) => t.modes.includes(mode));
+}
+
+export function toneFitsMode(value: unknown, mode: ModeId): value is ToneId {
+  return isToneId(value) && toneById.get(value)!.modes.includes(mode);
 }
 
 export function isLanguageId(value: unknown): value is LanguageId {

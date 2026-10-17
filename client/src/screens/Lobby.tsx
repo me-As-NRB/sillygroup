@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { GENRES, LANGUAGES, MAX_GENRES, MODES, TONES, genreById } from "../../../shared/genres";
+import { GENRES, LANGUAGES, MAX_GENRES, MODES, genreById, tonesFor } from "../../../shared/genres";
 import { MAX_CONTEXT_LENGTH, QUESTIONS_PER_ROUND, TIMER_CHOICES } from "../../../shared/rules";
 import type { GameState } from "../../../shared/types";
 import { About } from "../components/About";
@@ -192,9 +192,9 @@ function HostSetup({ state, online, needsPlayers, onInvite }: HostSetupProps) {
         onChange={(language) => updateSettings({ language })}
       />
       <Segmented
-        label="How blunt?"
+        label={couple ? "How personal?" : "How blunt?"}
         value={settings.tone}
-        options={TONES.map((t) => ({ value: t.id, label: t.label, hint: t.hint }))}
+        options={tonesFor(settings.mode).map((t) => ({ value: t.id, label: t.label, hint: (couple && t.coupleHint) || t.hint }))}
         onChange={(tone) => updateSettings({ tone })}
       />
       <Segmented

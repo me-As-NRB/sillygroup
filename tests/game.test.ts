@@ -6,7 +6,7 @@ import { DEFAULT_TIMINGS, HostHistory, Room, RoomManager, type GameDeps } from "
 const AI_ASK = QUESTIONS_PER_ROUND + 6;
 import type { GenerateOptions } from "../server/ai";
 import { COUPLE_GENRE_BANK, GENRE_BANK, HINGLISH_GENRE_BANK } from "../server/questions";
-import { sameEnding, themeTopics, tooSimilar, topicsOf } from "../server/variety";
+import { INTIMATE_ANGLES, sameEnding, themeTopics, tooSimilar, topicsOf } from "../server/variety";
 import { sceneQuestions } from "../server/scenes";
 import type { Tracker } from "../server/stats";
 
@@ -134,6 +134,32 @@ describe("couple mode", () => {
     expect(two.room.start(two.ids[0])).toBe(true);
   });
 
+  it("gives each mode its own tones: couples default to Blunt and may pick Intimate, friends get Savage", () => {
+    const { room, ids } = setup(2);
+    room.updateSettings(ids[0], { tone: "intimate" });
+    expect(room.settings.tone).toBe("savage"); // Intimate is for couples only
+
+    room.updateSettings(ids[0], { mode: "couple" });
+    expect(room.settings.tone).toBe("blunt"); // the couple default
+    room.updateSettings(ids[0], { tone: "savage" });
+    expect(room.settings.tone).toBe("blunt"); // no roasting in couple mode
+    room.updateSettings(ids[0], { tone: "intimate" });
+    expect(room.settings.tone).toBe("intimate");
+
+    room.updateSettings(ids[0], { mode: "friends" });
+    expect(room.settings.tone).toBe("savage"); // back to the friends default
+  });
+
+  it("asks the AI for romantic angles, and deeper ones in Intimate", async () => {
+    const generateQuestions = vi.fn<(opts: GenerateOptions) => Promise<string[]>>(async () => []);
+    const { room, ids } = setup(2, makeDeps({ generateQuestions }));
+    room.updateSettings(ids[0], { mode: "couple", tone: "intimate" });
+    await startAndWait(room, ids[0]);
+    const call = generateQuestions.mock.calls[0][0];
+    expect(call.tone).toBe("intimate");
+    expect(call.angles.every((a) => (INTIMATE_ANGLES as readonly string[]).includes(a))).toBe(true);
+  });
+
   it("asks the AI for couple questions about relationship topics and counts matches", async () => {
     const generateQuestions = vi.fn<(opts: GenerateOptions) => Promise<string[]>>(async () => []);
     const { room, ids } = setup(2, makeDeps({ generateQuestions }));
@@ -152,6 +178,23 @@ describe("couple mode", () => {
     }
     const final = room.stateFor(ids[0]).final!;
     expect(final).toMatchObject({ mode: "couple", matches: 7, totalQuestions: QUESTIONS_PER_ROUND });
+  });
+});
+
+describe("time between questions", () => {
+  it.each([
+    [2, DEFAULT_TIMINGS.smallGroupRevealMs],
+    [3, DEFAULT_TIMINGS.smallGroupRevealMs],
+    [4, DEFAULT_TIMINGS.revealMs]
+  ])("with %i players, shows the next question after %ims", async (n, wait) => {
+    const { room, ids } = setup(n);
+    await startAndWait(room, ids[0]);
+    for (const id of ids) room.vote(id, ids[0]);
+    expect(room.stateFor(ids[0]).phase).toBe("reveal");
+    vi.advanceTimersByTime(wait - 1);
+    expect(room.stateFor(ids[0]).phase).toBe("reveal");
+    vi.advanceTimersByTime(1);
+    expect(room.stateFor(ids[0]).question!.index).toBe(1);
   });
 });
 
@@ -183,7 +226,7 @@ describe("a full round", () => {
         [c, 850, 1.5]
       ]);
       expect(reveal.tally[0].voters.map((v) => v.id)).toEqual([a, c]);
-      vi.advanceTimersByTime(DEFAULT_TIMINGS.revealMs);
+      vi.advanceTimersByTime(DEFAULT_TIMINGS.smallGroupRevealMs); // 3 players: a shorter wait
     }
 
     expect(seen.size).toBe(QUESTIONS_PER_ROUND);
@@ -311,7 +354,7 @@ describe("question variety", () => {
   it.each([
     { mode: "friends", tone: "savage", language: "hinglish", genres: ["trek"] },
     { mode: "friends", tone: "blunt", language: "en", genres: [] },
-    { mode: "couple", tone: "savage", language: "hinglish", genres: ["trip"] },
+    { mode: "couple", tone: "intimate", language: "hinglish", genres: ["trip"] },
     { mode: "couple", tone: "blunt", language: "en", genres: [] }
   ] as const)("keeps rounds varied for 3 rounds: $mode/$tone/$language", async (cfg) => {
     const { room, ids } = setup(2);
@@ -323,9 +366,10 @@ describe("question variety", () => {
       for (const [i, q] of texts.entries()) {
         for (const p of texts.slice(0, i)) expect(tooSimilar(p, q) || sameEnding(p, q)).toBe(false);
       }
-      // The first round also uses each everyday topic only once (the theme's own topic may repeat).
+      // The first round also uses each everyday topic only once (the theme's own topic,
+      // and romance in couple mode, may repeat).
       if (round === 0) {
-        const exempt = themeTopics(cfg.genres);
+        const exempt = new Set([...themeTopics(cfg.genres), ...(cfg.mode === "couple" ? ["romance"] : [])]);
         const topics = texts.flatMap(topicsOf).filter((t) => !exempt.has(t));
         expect(new Set(topics).size).toBe(topics.length);
       }

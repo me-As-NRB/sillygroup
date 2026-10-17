@@ -298,7 +298,7 @@ export const MORE_SCENES: Readonly<Record<string, Scenes>> = {
 /** Reactions completing "…, who would ___?" / "…, toh kaun ___?". */
 // Every reaction has to make sense after any scene of any theme, good or bad:
 // "If the hero looked like your ex, who would …?" must still read naturally.
-export const REACTIONS: Readonly<Record<ToneId, { en: readonly string[]; hi: readonly string[] }>> = {
+export const REACTIONS: Readonly<Record<"blunt" | "savage", { en: readonly string[]; hi: readonly string[] }>> = {
   savage: {
     en: [
       "post it on their story first",
@@ -380,7 +380,8 @@ export function sceneQuestions(genre: string, tone: ToneId, language: LanguageId
   const scenes: Scenes = { en: [...base.en, ...(more?.en ?? [])], hi: [...base.hi, ...(more?.hi ?? [])] };
   const build = (lang: "en" | "hi") => {
     const s = shuffle([...scenes[lang]], random);
-    const r = shuffle([...REACTIONS[tone][lang]], random);
+    // Scenes are friends' questions; only Savage has its own reactions.
+    const r = shuffle([...REACTIONS[tone === "savage" ? "savage" : "blunt"][lang]], random);
     const out: string[] = [];
     // Pass k pairs scene i with reaction (i + k). Within a pass every scene and
     // reaction is different (scenes ≤ reactions); across passes every pair appears once.

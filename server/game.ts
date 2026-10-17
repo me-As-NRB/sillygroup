@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import { MAX_GENRES, genreById, isLanguageId, isModeId, isToneId } from "../shared/genres";
+import { DEFAULT_TONE, MAX_GENRES, genreById, isLanguageId, isModeId, toneFitsMode } from "../shared/genres";
 import {
   MAX_CONTEXT_LENGTH,
   MAX_PLAYERS,
@@ -23,14 +23,16 @@ import type {
 } from "../shared/types";
 import type { GenerateOptions } from "./ai";
 import { pickFromBank } from "./questions";
-import { pickDiverse, sampleAngles, themeTopics, type HostHistory } from "./variety";
+import { anglesFor, pickDiverse, sampleAngles, themeTopics, type HostHistory } from "./variety";
 
 export { HostHistory } from "./variety";
 import type { Tracker } from "./stats";
 
 export interface Timings {
-  /** How long the vote breakdown stays on screen. */
+  /** How long the vote breakdown stays on screen… */
   revealMs: number;
+  /** …and with 2–3 players, who have only a few votes to look at. */
+  smallGroupRevealMs: number;
   /** A refreshing host keeps the crown for this long. */
   hostGraceMs: number;
   /** Disconnected players leave the lobby after this… */
@@ -43,6 +45,7 @@ export interface Timings {
 
 export const DEFAULT_TIMINGS: Timings = {
   revealMs: 10_000,
+  smallGroupRevealMs: 6_000,
   hostGraceMs: 10_000,
   lobbyDropMs: 30_000,
   gameDropMs: 5 * 60_000,
@@ -225,9 +228,13 @@ export class Room {
       this.settings.genres = [...new Set(patch.genres)].filter((g) => genreById.has(g)).slice(0, MAX_GENRES);
     }
     if (typeof patch.context === "string") this.settings.context = patch.context.trim().slice(0, MAX_CONTEXT_LENGTH);
-    if (isToneId(patch.tone)) this.settings.tone = patch.tone;
     if (isLanguageId(patch.language)) this.settings.language = patch.language;
-    if (isModeId(patch.mode)) this.settings.mode = patch.mode;
+    if (isModeId(patch.mode) && patch.mode !== this.settings.mode) {
+      this.settings.mode = patch.mode;
+      // Each mode has its own tones (Savage for friends, Intimate for couples) and default.
+      this.settings.tone = DEFAULT_TONE[patch.mode];
+    }
+    if (toneFitsMode(patch.tone, this.settings.mode)) this.settings.tone = patch.tone;
     this.onChange(this);
   }
 
@@ -286,7 +293,7 @@ export class Room {
     // Everything this host has seen in any room, plus this room's rounds (most recent last).
     const seen = [...new Set([...this.deps.questionHistory.get(this.hostKey), ...this.used])];
     // Ask for extras, each about a different life area, then keep the most varied ones.
-    const angles = sampleAngles(QUESTIONS_PER_ROUND + 6, Math.random, mode === "couple");
+    const angles = sampleAngles(QUESTIONS_PER_ROUND + 6, Math.random, anglesFor(mode, tone));
     const aiQuestions = await this.deps.generateQuestions({
       count: angles.length,
       genres: genres.map((id) => genreById.get(id)?.label ?? id),
@@ -303,8 +310,9 @@ export class Room {
 
     // Couple rounds are about the two partners; anything addressed to a group doesn't fit.
     const fitting = mode === "couple" ? aiQuestions.filter((q) => !/\b(group|everyone|sab log)\b/i.test(q)) : aiQuestions;
-    // The theme itself may repeat (every Trek question is about travel); other topics may not.
-    const exempt = themeTopics(genres);
+    // The theme itself may repeat (every Trek question is about travel, every couple
+    // question is about romance); other topics may not.
+    const exempt = new Set([...themeTopics(genres), ...(mode === "couple" ? ["romance"] : [])]);
     let questions = pickDiverse(fitting, seen, QUESTIONS_PER_ROUND, [], exempt);
     // A fresh AI question reads better than a backup one, even if its topic repeats.
     questions = [...questions, ...pickDiverse(fitting, seen, QUESTIONS_PER_ROUND - questions.length, questions, exempt, false)];
@@ -414,7 +422,8 @@ export class Room {
         .join(" ")
     );
     this.phase = "reveal";
-    this.timer = setTimeout(() => this.nextQuestion(), this.deps.timings.revealMs);
+    const { revealMs, smallGroupRevealMs } = this.deps.timings;
+    this.timer = setTimeout(() => this.nextQuestion(), q.options.length <= 3 ? smallGroupRevealMs : revealMs);
     this.onChange(this);
   }
 

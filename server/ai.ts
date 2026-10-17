@@ -20,9 +20,10 @@ function keys(name: string, max: number): string[] {
 
 const GEMINI_KEYS = keys("GEMINI_API_KEY", 5);
 // "-latest" aliases always point to Google's newest Flash models. Lite first: in
-// testing it answered in seconds with equally good questions, while the full Flash
-// model was often busy (timeouts / 503).
-const GEMINI_MODELS = [...new Set([env("GEMINI_MODEL") ?? "gemini-flash-lite-latest", "gemini-flash-latest"])];
+// testing it answered in seconds, while the full Flash model was often busy
+// (timeouts / 503). GEMINI_MODEL=gemini-flash-latest puts the stronger model first;
+// Lite stays as its fallback.
+const GEMINI_MODELS = [...new Set([env("GEMINI_MODEL") ?? "gemini-flash-lite-latest", "gemini-flash-latest", "gemini-flash-lite-latest"])];
 const GROQ_KEYS = keys("GROQ_API_KEY", 4);
 // Groq answers in seconds; if the first model is busy, the second is tried.
 const GROQ_MODELS = [...new Set([env("GROQ_MODEL") ?? "openai/gpt-oss-120b", "qwen/qwen3.8-27b"])];
@@ -108,22 +109,25 @@ const TONE_GUIDE: Record<ToneId, string> = {
 const TONE_EXAMPLES: Record<ToneId, string[]> = {
   blunt: [
     "Who forgets their bag halfway up every trek?",
-    "Agar shaadi mein DJ band ho jaaye, kaun khud gaana shuru karega?",
+    "Agar shaadi mein DJ band ho jaaye, toh kaun khud gaana shuru kar dega?",
     "Who texts their ex at 2am after a party?"
   ],
   savage: [
-    "Who is still secretly stalking their ex?",
+    "Who would read your chats if you left your phone unlocked for two minutes?",
     "If the group chat leaked, whose messages cause the biggest scandal?",
-    "Agar crush ne propose kiya, kaun dosto ko turant bhool jaayega?",
-    "Is group ka sabse bada do-muha kaun hai?"
+    "Agar crush propose kar de, toh kaun dosto ko turant bhool jaayega?",
+    "Kaun saamne tareef karta hai aur peeche screenshot bhej deta hai?"
   ]
 };
 
 const LANGUAGE_GUIDE: Record<LanguageId, string> = {
   hinglish: [
-    "Language: Hinglish, the way young Indians text each other: Hindi words in Roman script mixed naturally with English.",
+    "Language: Hinglish, exactly how friends in Delhi or Mumbai text each other on WhatsApp: a simple Hindi sentence in Roman script, with the English words people really use (trip, crush, ex, bill, date, plan, group chat, story, screenshot, boss).",
+    "Use only everyday spoken Hindi (kaun, agar, toh, sabse, pehle, chupke se, bolega, karega, jaayega). Never bookish or formal Hindi (words like vyakti, sambhavna, mitra, kshama); when a Hindi word is not common in daily chat, use the English word instead.",
+    "Keep the grammar simple: 'Agar <situation>, toh kaun <action>?' or 'Kaun <action>?'. Never translate an English idiom word for word.",
+    "Every question must be clear to a 20-year-old on the first read; if it sounds like a translation, rewrite it.",
     "Write about 7 of every 10 questions in Hinglish and the rest in simple English.",
-    "Examples: 'Group mein sabse bada drama queen kaun hai?', 'Agar trip pe paise khatam ho jaayein, kaun ghar call karega?'.",
+    "Examples: 'Agar trip pe paise khatam ho jaayein, toh kaun chupke se ghar call karega?', 'Kaun crush ki purani photo galti se like kar deta hai?'.",
     "Use Roman script only, never Devanagari."
   ].join(" "),
   en: "Language: simple, natural English."
@@ -132,8 +136,9 @@ const LANGUAGE_GUIDE: Record<LanguageId, string> = {
 const STYLE_RULES = [
   "Style: CRISP. Each question is one short sentence, ideally under 80 characters, no filler words.",
   "Vary the openings; do not start more than two questions with 'Who is most likely to'.",
-  "About half must be CONDITIONAL scenarios that set up a situation first: 'If … , who would …?' / 'Agar … , kaun …?'. The rest are direct.",
-  "Every question needs a punchline: a specific, funny or exposing detail, never a vague trait like 'who is the nicest'.",
+  "About half must be CONDITIONAL scenarios that set up a situation first: 'If … , who would …?' / 'Agar … , toh kaun …?'. The rest are direct.",
+  "SPECIFIC, never basic: every question needs a concrete detail you can picture (a place, an object, an app, a time, something someone says) and a punchline.",
+  "Bad (basic): 'Who is the laziest?', 'Sabse funny kaun hai?'. Good: 'Who would fake a stomach ache to skip the 5am trek?', 'Agar boss meme group padh le, toh kaun sabse pehle left karega?'.",
   "Make it FUN: playful exaggeration and absurd-but-believable situations that make the room laugh out loud. In Savage, the punchline should sting."
 ].join("\n");
 
@@ -179,7 +184,7 @@ export function buildPrompt({ count, genres, context, tone, language, mode, play
     couple ? (COUPLE_TONE_GUIDE[tone] ?? COUPLE_TONE_GUIDE.savage) : (TONE_GUIDE[tone] ?? TONE_GUIDE.savage),
     LANGUAGE_GUIDE[language] ?? LANGUAGE_GUIDE.en,
     STYLE_RULES,
-    "Examples of the style:",
+    "Examples of the style (style only: your topics come from the THEME):",
     ...(couple ? COUPLE_EXAMPLES : (TONE_EXAMPLES[tone] ?? TONE_EXAMPLES.savage)).map((e) => `- ${e}`),
     couple
       ? "Each question must be answerable with one of the two partners (\"Who…\" / \"Kaun…\")."
@@ -350,8 +355,12 @@ export async function tryProviders(
   for (const { name, model, ask } of providers) {
     if (model && overloaded.has(model)) continue;
     try {
+      const started = Date.now();
       const questions = toQuestions(await ask(prompt));
-      if (questions.length) return questions;
+      if (questions.length) {
+        log(`AI questions from ${name}: ${questions.length} in ${((Date.now() - started) / 1000).toFixed(1)}s`);
+        return questions;
+      }
       log(`AI question generation returned nothing usable (${name}); trying the next option`);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

@@ -306,6 +306,8 @@ export class Room {
     // The theme itself may repeat (every Trek question is about travel); other topics may not.
     const exempt = themeTopics(genres);
     let questions = pickDiverse(fitting, seen, QUESTIONS_PER_ROUND, [], exempt);
+    // A fresh AI question reads better than a backup one, even if its topic repeats.
+    questions = [...questions, ...pickDiverse(fitting, seen, QUESTIONS_PER_ROUND - questions.length, questions, exempt, false)];
     const fromAi = questions.length;
     tracker.track(fromAi >= QUESTIONS_PER_ROUND / 2 ? "rounds_ai" : "rounds_backup");
     this.log(

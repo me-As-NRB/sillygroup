@@ -170,6 +170,15 @@ describe("AI question helpers", () => {
     expect(prompt).toContain("1. money and spending\n2. secrets and lies");
   });
 
+  it("asks for everyday, easy Hinglish and specific (not basic) questions", () => {
+    const prompt = buildPrompt({ count: 10, genres: ["College Life"], context: "", tone: "savage", language: "hinglish", mode: "friends", playerCount: 4, avoid: [], angles: [] });
+    expect(prompt).toContain("everyday spoken Hindi");
+    expect(prompt).toContain("Never bookish or formal Hindi");
+    expect(prompt).toContain("clear to a 20-year-old on the first read");
+    expect(prompt).toContain("SPECIFIC, never basic");
+    expect(prompt).toContain("style only: your topics come from the THEME");
+  });
+
   it("gives the AI couple context in couple mode", () => {
     const prompt = buildPrompt({ count: 14, genres: ["Trip & Travel"], context: "", tone: "savage", language: "hinglish", mode: "couple", playerCount: 2, avoid: [], angles: ["jealousy"] });
     expect(prompt).toContain("two-player game played by a couple");
@@ -190,7 +199,7 @@ describe("AI providers", () => {
   const toQuestions = (text: string) => parseQuestions(text);
   const ok = '{"questions":["Who is late?"]}';
 
-  it("falls back to the next provider when one fails, and logs why", async () => {
+  it("falls back to the next provider when one fails, and logs why and who answered", async () => {
     const log: string[] = [];
     const result = await tryProviders(
       [
@@ -202,7 +211,9 @@ describe("AI providers", () => {
       (m) => log.push(m)
     );
     expect(result).toEqual(["Who is late?"]);
-    expect(log).toEqual(["AI question generation failed (groq): Groq 400: invalid key"]);
+    expect(log).toHaveLength(2);
+    expect(log[0]).toBe("AI question generation failed (groq): Groq 400: invalid key");
+    expect(log[1]).toMatch(/^AI questions from openrouter: 1 in \d+\.\ds$/);
   });
 
   it("skips a provider that answers with nothing usable", async () => {

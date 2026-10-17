@@ -289,6 +289,25 @@ describe("question variety", () => {
     expect(room.stateFor(ids[0]).question!.text).toBe("Who would start a dance-off on the summit?");
   });
 
+  it("prefers AI questions to backup ones, even when their topics repeat", async () => {
+    // All ten touch the same "phone" topic; none is a repeat of another.
+    const phone = [
+      "Who would read your chats if you left your phone unlocked?",
+      "Who screenshots every argument and saves it forever?",
+      "Who posts a story before the food even arrives?",
+      "Who replies 'k' and thinks it's a full message?",
+      "Who has 4000 unread WhatsApp messages right now?",
+      "Who would scroll reels during their own birthday cake cutting?",
+      "Who sends voice notes longer than a podcast?",
+      "Who leaves people on seen for three business days?",
+      "Who checks Instagram the second they wake up?",
+      "Who would call you just to say 'check WhatsApp'?"
+    ];
+    const { room, ids } = setup(3, makeDeps({ generateQuestions: async () => phone }));
+    const texts = await playRound(room, ids);
+    expect([...texts].sort()).toEqual([...phone].sort());
+  });
+
   it.each([
     { mode: "friends", tone: "savage", language: "hinglish", genres: ["trek"] },
     { mode: "friends", tone: "blunt", language: "en", genres: [] },

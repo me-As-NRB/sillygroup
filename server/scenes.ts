@@ -296,39 +296,40 @@ export const MORE_SCENES: Readonly<Record<string, Scenes>> = {
 };
 
 /** Reactions completing "…, who would ___?" / "…, toh kaun ___?". */
+// Every reaction has to make sense after any scene of any theme, good or bad:
+// "If the hero looked like your ex, who would …?" must still read naturally.
 export const REACTIONS: Readonly<Record<ToneId, { en: readonly string[]; hi: readonly string[] }>> = {
   savage: {
     en: [
-      "blame everyone else and walk out",
+      "post it on their story first",
+      "make it all about themselves",
       "secretly enjoy the drama",
-      "post a story before helping anyone",
-      "throw their best friend under the bus",
-      "make the whole thing about themselves",
-      "lie about it for the next five years",
-      "text their ex about it",
-      "flirt with a stranger to fix it",
-      "cry first and then deny it",
+      "say 'I knew this would happen'",
+      "spread it as gossip by morning",
       "vanish without telling anyone",
-      "turn it into gossip by morning",
-      "say 'I knew this would happen'"
+      "only care about saving themselves",
+      "cry first and then deny it",
+      "roast everyone about it in the group chat",
+      "lie about what really happened",
+      "create the biggest scene",
+      "taunt everyone about it for years"
     ],
     hi: [
-      "sabko blame karke nikal jaayega",
+      "sabse pehle iski story daalega",
+      "sara attention khud pe le aayega",
       "chupke se drama enjoy karega",
-      "madad se pehle story daalega",
-      "apne best friend ko phasa dega",
-      "poori baat khud pe le aayega",
-      "agle 5 saal tak jhooth bolega",
-      "ex ko message kar dega",
-      "kisi stranger se flirt karke kaam nikalega",
-      "pehle royega, phir mukar jaayega",
+      "bolega 'mujhe pehle se pata tha'",
+      "subah tak sabko bata dega",
       "bina bataye gaayab ho jaayega",
-      "subah tak gossip bana dega",
-      "bolega 'mujhe pehle se pata tha'"
+      "sirf apni fikar karega",
+      "pehle royega, phir mukar jaayega",
+      "group chat mein sabka mazaak udayega",
+      "sabko jhoothi kahaani sunayega",
+      "sabse zyada nautanki karega",
+      "saalon tak sabko taunt maarega"
     ]
   },
   blunt: {
-    // Every reaction has to make sense after any scene of any theme.
     en: [
       "panic first",
       "complain the loudest",

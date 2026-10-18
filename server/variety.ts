@@ -118,7 +118,9 @@ const STOP = new Set(
     "most more likely would will could can does do did has have had their them they his her he she " +
     "here this that these those group our us we you your one ever even still first last always never " +
     "kaun kiska kiski kiske kis sabse zyada hai hain ho hoga hogi ka ki ke ko mein me se pe par aur " +
-    "bhi toh to ya jo jab tak wala wali wale kya kar karta karti karega karegi"
+    "bhi toh to ya jo jab tak wala wali wale kya kar karta karti karega karegi " +
+    // "the other" / "dusre ke liye" and helper verbs appear in almost every couple question.
+    "other each dusre dusra dusri liye jaata jaati jaate jaayega jaayegi hota hoti hote raha rahi rahe deta deti leta leti sakta sakti"
   ).split(" ")
 );
 

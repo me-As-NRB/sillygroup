@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPrompt, cleanQuestions, isModelOverloaded, looksHinglish, parseQuestions, tryProviders } from "../server/ai";
+import { buildPrompt, cleanQuestions, isModelOverloaded, looksHinglish, parseQuestions, tryProviders, usableQuestions } from "../server/ai";
 import {
   GENRE_BANK,
   HINGLISH_BANK,
@@ -205,6 +205,18 @@ describe("AI question helpers", () => {
     expect(prompt).toContain("INTIMATE");
     expect(prompt).toContain("late-night heart-to-heart");
     expect(prompt).toContain("never sexual or explicit");
+  });
+
+  it("drops reworded copies of the prompt examples, wrong-language and played questions", () => {
+    const raw = [
+      "Who would still choose the other on their absolute worst day?", // an example with one word added
+      "Who keeps every boarding pass from your trips together?",
+      "Kaun dusre ke liye subah chai banata hai?", // Hinglish in an English round
+      "Who falls asleep on the other's shoulder within minutes of takeoff?"
+    ];
+    const kept = usableQuestions(raw, { language: "en", avoid: ["Who falls asleep on the other's shoulder within minutes of takeoff?"], count: 10 });
+    expect(kept).toEqual(["Who keeps every boarding pass from your trips together?"]);
+    expect(usableQuestions(raw.slice(2, 3), { language: "hinglish", avoid: [], count: 10 })).toHaveLength(1);
   });
 
   it("shows English rounds only English examples and drops Hinglish answers", () => {

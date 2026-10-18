@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { isVulgar } from "../shared/rules";
+import { tooSimilar } from "./variety";
 import type { LanguageId, ModeId, ToneId } from "../shared/types";
 
 // Every AI whose key is set is tried, in this order, until one answers; only
@@ -302,7 +303,8 @@ async function askGemini(prompt: string, model: string, key: string): Promise<st
     method: "POST",
     headers: { "x-goog-api-key": key, "Content-Type": "application/json" },
     body: JSON.stringify(geminiRequest(prompt, model)),
-    signal: AbortSignal.timeout(15_000) // a busy model hands over to the next one quickly
+    // A busy model hands over quickly; full Flash usually answers in 3–7 s.
+    signal: AbortSignal.timeout(model.includes("lite") ? 15_000 : 10_000)
   });
   if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 200)}`);
   return geminiText((await res.json()) as GeminiResponse);
@@ -380,16 +382,16 @@ async function askClaude(prompt: string): Promise<string> {
  * [] on any failure so the caller can fall back to the built-in bank.
  */
 export async function generateQuestions(opts: GenerateOptions): Promise<string[]> {
-  return tryProviders(
-    configuredProviders(),
-    buildPrompt(opts),
-    (text) =>
-      cleanQuestions(
-        parseQuestions(text).filter((q) => opts.language === "hinglish" || !looksHinglish(q)),
-        [...opts.avoid, ...PROMPT_EXAMPLES],
-        opts.count
-      )
-  );
+  return tryProviders(configuredProviders(), buildPrompt(opts), (text) => usableQuestions(parseQuestions(text), opts));
+}
+
+/**
+ * Keeps the AI's questions that fit the round: in the right language, not a copy
+ * (even reworded) of a prompt example, and not already played.
+ */
+export function usableQuestions(raw: string[], { language, avoid, count }: Pick<GenerateOptions, "language" | "avoid" | "count">): string[] {
+  const fits = raw.filter((q) => (language === "hinglish" || !looksHinglish(q)) && !PROMPT_EXAMPLES.some((e) => tooSimilar(q, e)));
+  return cleanQuestions(fits, avoid, count);
 }
 
 /**

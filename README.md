@@ -10,6 +10,8 @@ has 10 questions, and questions never repeat within a room.
 
 - The host picks one of 20 themes, can describe the group in their own words, and sets
   the tone (Blunt or Savage, Savage by default). AI writes questions to match.
+- Besides the players' names there is a "None of us" choice for questions that fit nobody;
+  if it gets the most votes, the players who picked it score.
 - After each question everyone sees who voted for whom; with 2–3 players the next question
   comes sooner (6 s instead of 10 s).
 - **Couple mode** (2 players): romantic questions about the two of them, Blunt (sweet and

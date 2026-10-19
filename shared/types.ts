@@ -64,6 +64,8 @@ export interface Highlight {
   winners: string[];
   topVotes: number;
   totalVotes: number;
+  /** "None of us" got the most votes: not a verdict worth sharing. */
+  nobody?: boolean;
 }
 
 export interface LeaderboardEntry extends PlayerRef {

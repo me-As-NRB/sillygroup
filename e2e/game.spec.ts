@@ -66,15 +66,16 @@ test("three players play a full round", async ({ browser, page: host, contextOpt
       await expect(p.getByText(`Question ${i}/${N}`)).toBeVisible({ timeout: 15_000 });
     }
     if (i === 1) expect(await seriousA11yIssues(host)).toEqual([]);
-    // Everyone picks the guest Gita, so she is the unanimous answer.
+    // Everyone picks the guest Gita, so she is the unanimous answer; the last question fits nobody.
+    const answer = i === N ? "None of us" : "Gita Guest";
     for (const [n, p] of players.entries()) {
-      const pick = p.getByRole("group", { name: "Pick a player" }).getByRole("button", { name: /Gita Guest/ });
+      const pick = p.getByRole("group", { name: "Pick a player" }).getByRole("button", { name: new RegExp(answer) });
       await pick.click();
       // The last vote ends the question at once, so only earlier voters see the locked-in state.
       if (n < players.length - 1) await expect(pick).toHaveAttribute("aria-pressed", "true");
     }
     await expect(host.getByRole("heading", { name: "Who voted for whom" })).toBeVisible();
-    await expect(host.getByRole("heading", { level: 1, name: "Gita Guest" })).toBeVisible();
+    await expect(host.getByRole("heading", { level: 1, name: answer })).toBeVisible();
     await expect(host.locator(".vote-row.win .voter")).toHaveCount(3);
   }
 
@@ -116,9 +117,10 @@ test("a couple plays a full round and sees how often they matched", async ({ bro
 
   for (let i = 1; i <= N; i++) {
     for (const p of [host, partner]) await expect(p.getByText(`Question ${i}/${N}`)).toBeVisible({ timeout: 15_000 });
-    // Both always pick Riya, so every question is a match.
-    await host.getByRole("group", { name: "Pick a player" }).getByRole("button", { name: /Riya/ }).click();
-    await partner.getByRole("group", { name: "Pick a player" }).getByRole("button", { name: /Riya/ }).click();
+    // Both pick Riya (on the first question, "Neither of us"), so every question is a match.
+    const answer = i === 1 ? /Neither of us/ : /Riya/;
+    await host.getByRole("group", { name: "Pick a player" }).getByRole("button", { name: answer }).click();
+    await partner.getByRole("group", { name: "Pick a player" }).getByRole("button", { name: answer }).click();
     await expect(host.getByText("You both picked")).toBeVisible();
   }
   await expect(host.getByRole("heading", { name: `You matched on ${N} of ${N}` })).toBeVisible({ timeout: 15_000 });

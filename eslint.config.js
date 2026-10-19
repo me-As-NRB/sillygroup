@@ -4,7 +4,8 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist", "node_modules", "playwright-report", "test-results"] },
+  // .claude/.kilo hold coding agents' worktrees: other checkouts of this repo, linted there.
+  { ignores: ["dist", "node_modules", "playwright-report", "test-results", ".claude", ".kilo"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

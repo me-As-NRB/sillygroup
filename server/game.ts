@@ -4,9 +4,11 @@ import {
   MAX_CONTEXT_LENGTH,
   MAX_PLAYERS,
   MIN_PLAYERS,
+  NONE_ID,
   QUESTIONS_PER_ROUND,
   TIMER_CHOICES,
   cleanName,
+  noneLabel,
   pickHighlights,
   pointsForRank,
   tallyVotes,
@@ -364,7 +366,8 @@ export class Room {
     const durationMs = this.settings.timer * 1000;
     this.current = {
       text: this.questions[this.qIndex],
-      options: this.connectedPlayers().map((p) => ({ id: p.id, name: p.name })),
+      // Everyone online, plus "None of us" for a question that fits nobody.
+      options: [...this.connectedPlayers().map((p) => ({ id: p.id, name: p.name })), { id: NONE_ID, name: noneLabel(this.settings.mode) }],
       votes: new Map(),
       startedAt: now,
       endsAt: now + durationMs
@@ -409,7 +412,8 @@ export class Room {
       text: q.text,
       winners: tally.winners.map(nameOf),
       topVotes: tally.topVotes,
-      totalVotes: q.votes.size
+      totalVotes: q.votes.size,
+      nobody: tally.winners.includes(NONE_ID)
     });
     this.log(
       [
@@ -423,7 +427,8 @@ export class Room {
     );
     this.phase = "reveal";
     const { revealMs, smallGroupRevealMs } = this.deps.timings;
-    this.timer = setTimeout(() => this.nextQuestion(), q.options.length <= 3 ? smallGroupRevealMs : revealMs);
+    const playerCount = q.options.filter((o) => o.id !== NONE_ID).length;
+    this.timer = setTimeout(() => this.nextQuestion(), playerCount <= 3 ? smallGroupRevealMs : revealMs);
     this.onChange(this);
   }
 

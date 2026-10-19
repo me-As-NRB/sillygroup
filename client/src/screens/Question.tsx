@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { NONE_ID } from "../../../shared/rules";
 import type { GameState, PlayerRef, QuestionView } from "../../../shared/types";
 import { Avatar, usePlayerTint } from "../components/Avatar";
 import { TimerRing } from "../components/TimerRing";
@@ -106,8 +107,15 @@ interface OptionProps {
 
 function OptionButton({ player, isYou, picked, disabled, onPick }: OptionProps) {
   const tint = usePlayerTint(player.id);
+  const none = player.id === NONE_ID;
   return (
-    <button className={`option${picked ? " picked" : ""}`} style={tint} disabled={disabled} aria-pressed={picked} onClick={onPick}>
+    <button
+      className={`option${none ? " none" : ""}${picked ? " picked" : ""}`}
+      style={none ? undefined : tint}
+      disabled={disabled}
+      aria-pressed={picked}
+      onClick={onPick}
+    >
       <Avatar player={player} />
       <span>{player.name}</span>
       {isYou && <span className="tag good">you</span>}

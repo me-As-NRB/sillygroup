@@ -1,6 +1,13 @@
-import type { Highlight, PlayerRef, TallyEntry } from "./types";
+import type { Highlight, ModeId, PlayerRef, TallyEntry } from "./types";
 
 export const QUESTIONS_PER_ROUND = 10;
+
+/** The extra choice after the players' names, for a question that fits nobody. */
+export const NONE_ID = "none";
+
+export function noneLabel(mode: ModeId): string {
+  return mode === "couple" ? "Neither of us" : "None of us";
+}
 export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 20;
 export const MAX_NAME_LENGTH = 20;
@@ -72,7 +79,7 @@ export function tallyVotes(options: PlayerRef[], votes: Map<string, VoteRecord>,
 /** The most one-sided single-winner verdicts of a round, for the share card. */
 export function pickHighlights(history: Highlight[], count = 2): Highlight[] {
   return history
-    .filter((h) => h.winners.length === 1 && h.totalVotes >= 2)
+    .filter((h) => h.winners.length === 1 && h.totalVotes >= 2 && !h.nobody)
     .sort((a, b) => b.topVotes / b.totalVotes - a.topVotes / a.totalVotes || b.topVotes - a.topVotes)
     .slice(0, count);
 }

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { QUESTIONS_PER_ROUND } from "../shared/rules";
+import { NONE_ID, QUESTIONS_PER_ROUND } from "../shared/rules";
 import { DEFAULT_TIMINGS, HostHistory, Room, RoomManager, type GameDeps } from "../server/game";
 
 /** The game asks the AI for this many, then keeps the most varied QUESTIONS_PER_ROUND. */
@@ -181,6 +181,36 @@ describe("couple mode", () => {
   });
 });
 
+describe("None of us", () => {
+  it("is offered after the players; when most pick it, nobody fits and they score", async () => {
+    const { room, ids } = setup(3);
+    const [a, b, c] = ids;
+    await startAndWait(room, a);
+    expect(room.stateFor(a).question!.options.at(-1)).toEqual({ id: NONE_ID, name: "None of us" });
+    room.vote(a, NONE_ID);
+    room.vote(b, NONE_ID);
+    room.vote(c, a);
+    const reveal = room.stateFor(a).reveal!;
+    expect(reveal.winners).toEqual([{ id: NONE_ID, name: "None of us" }]);
+    expect(reveal.awards.map((x) => x.id)).toEqual([a, b]);
+  });
+
+  it("is 'Neither of us' for a couple, and both picking it is a match (but no share-card highlight)", async () => {
+    const { room, ids } = setup(2);
+    room.updateSettings(ids[0], { mode: "couple" });
+    await startAndWait(room, ids[0]);
+    expect(room.stateFor(ids[0]).question!.options.at(-1)!.name).toBe("Neither of us");
+    for (let i = 0; i < QUESTIONS_PER_ROUND; i++) {
+      room.vote(ids[0], NONE_ID);
+      room.vote(ids[1], NONE_ID);
+      vi.advanceTimersByTime(DEFAULT_TIMINGS.smallGroupRevealMs);
+    }
+    const final = room.stateFor(ids[0]).final!;
+    expect(final.matches).toBe(QUESTIONS_PER_ROUND);
+    expect(final.highlights).toEqual([]);
+  });
+});
+
 describe("time between questions", () => {
   it.each([
     [2, DEFAULT_TIMINGS.smallGroupRevealMs],
@@ -208,7 +238,7 @@ describe("a full round", () => {
     for (let i = 0; i < QUESTIONS_PER_ROUND; i++) {
       const q = room.stateFor(a).question!;
       expect(room.phase).toBe("question");
-      expect(q.options).toHaveLength(3);
+      expect(q.options.map((o) => o.id)).toEqual([a, b, c, NONE_ID]); // the players, then "None of us"
       seen.add(q.text);
 
       room.vote(a, b);

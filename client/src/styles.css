@@ -300,6 +300,11 @@ textarea.input { resize: vertical; min-height: 76px; font-size: .98rem; }
 .option.picked::after { content: "✓"; position: absolute; top: 8px; right: 10px; width: 22px; height: 22px; border-radius: 50%; background: var(--pc); color: #fff; font-size: .75rem; display: grid; place-items: center; }
 .option:disabled:not(.picked) { opacity: .45; cursor: default; }
 .option .avatar { width: 46px; height: 46px; font-size: 1.05rem; }
+/* "None of us": a neutral, full-width choice under the players' names. */
+.avatar.none { background: #6b6880; }
+.option.none, .vote-row.none { --pc: #6b6880; }
+.option.none { grid-column: 1 / -1; flex-direction: row; justify-content: center; min-height: 0; padding: 12px; }
+.option.none .avatar { width: 30px; height: 30px; font-size: .9rem; }
 .voted-strip { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
 .dot { font-size: .78rem; padding: 4px 10px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); color: var(--muted); }
 .dot.done { background: var(--good-soft); color: var(--good); border-color: transparent; }

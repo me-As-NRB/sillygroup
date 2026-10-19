@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { NONE_ID } from "../../../shared/rules";
 import type { GameState, QuestionView, RevealView, TallyEntry } from "../../../shared/types";
 import { Avatar, usePlayerTint } from "../components/Avatar";
 import { Scoreboard } from "../components/Players";
@@ -132,6 +133,7 @@ export function Reveal({ state, question, reveal }: { state: GameState; question
 
 function VoteRow({ entry, max, won, youId }: { entry: TallyEntry; max: number; won: boolean; youId: string }) {
   const tint = usePlayerTint(entry.id);
+  const none = entry.id === NONE_ID;
   // Start at 0 and grow on the next frame so the bar animates in.
   const [width, setWidth] = useState(0);
   useEffect(() => {
@@ -140,7 +142,7 @@ function VoteRow({ entry, max, won, youId }: { entry: TallyEntry; max: number; w
   }, [entry.votes, max]);
 
   return (
-    <li className={`vote-row${won ? " win" : ""}`} style={tint}>
+    <li className={`vote-row${won ? " win" : ""}${none ? " none" : ""}`} style={none ? undefined : tint}>
       <div className="head">
         <Avatar player={entry} size="sm" />
         <span className="n">{entry.name}</span>

@@ -1,3 +1,4 @@
+import { NONE_ID } from "../../../shared/rules";
 import type { PlayerRef } from "../../../shared/types";
 import { usePlayerColor } from "../context";
 import { initials } from "../lib/colors";
@@ -9,9 +10,11 @@ interface Props {
 
 export function Avatar({ player, size = "md" }: Props) {
   const color = usePlayerColor(player.id);
+  // "None of us" is not a person: a neutral dash instead of initials.
+  const none = player.id === NONE_ID;
   return (
-    <div className={`avatar ${size === "md" ? "" : size}`} style={{ background: color }} aria-hidden="true">
-      {initials(player.name)}
+    <div className={`avatar ${size === "md" ? "" : size}${none ? " none" : ""}`} style={none ? undefined : { background: color }} aria-hidden="true">
+      {none ? "–" : initials(player.name)}
     </div>
   );
 }
